@@ -54,6 +54,8 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
+  flutter_lints: ^3.0.0
+
   # Geradores de código (rodar: dart run build_runner build)
   build_runner: ^2.4.11
   freezed: ^2.5.2                # gera .freezed.dart
