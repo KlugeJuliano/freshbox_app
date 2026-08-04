@@ -11,16 +11,16 @@ dependencies:
 
   # ── Estado ────────────────────────────────────────────────
   # Gerenciamento de estado e injeção de dependência
-  flutter_riverpod: ^2.5.1       # state management
-  riverpod_annotation: ^2.3.5    # gerador de providers (@riverpod)
+  get_it: ^9.2.1
+  flutter_bloc: ^9.1.1  # gerador de providers (@bloc)
 
   # ── Modelos ───────────────────────────────────────────────
   # Imutabilidade, copyWith, fromJson/toJson gerados
-  freezed_annotation: ^2.4.1
+  freezed_annotation: ^3.1.0
   json_annotation: ^4.9.0
 
   # ── Navegação ─────────────────────────────────────────────
-  go_router: ^14.2.7             # roteamento declarativo com guards
+  go_router: ^17.3.0             # roteamento declarativo com guards
 
   # ── Rede ──────────────────────────────────────────────────
   dio: ^5.5.0                    # cliente HTTP com interceptors
@@ -37,7 +37,7 @@ dependencies:
   # ── UI / UX ───────────────────────────────────────────────
   shimmer: ^3.0.0                # skeleton loading nos grids
   carousel_slider: ^5.0.0        # banner carousel da home
-  smooth_page_indicator: ^1.1.0  # dots do carousel
+  smooth_page_indicator: ^2.0.1  # dots do carousel
   badges: ^3.1.2                 # contador no ícone do carrinho
   flutter_svg: ^2.0.10+1         # ícones SVG das categorias
 
@@ -45,7 +45,7 @@ dependencies:
   url_launcher: ^6.3.0           # abrir WhatsApp e links externos
 
   # ── Formatação ────────────────────────────────────────────
-  intl: ^0.19.0                  # formatação de moeda (R$ 5,99)
+  intl: ^0.20.3                  # formatação de moeda (R$ 5,99)
 
   # ── Formulários ───────────────────────────────────────────
   mask_text_input_formatter: ^2.9.0  # máscara de telefone e CEP
@@ -54,15 +54,12 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  flutter_lints: ^3.0.0
+  flutter_lints: ^6.0.0
 
   # Geradores de código (rodar: dart run build_runner build)
   build_runner: ^2.4.11
-  freezed: ^2.5.2                # gera .freezed.dart
+  freezed: ^3.2.3                # gera .freezed.dart
   json_serializable: ^6.8.0      # gera .g.dart (fromJson/toJson)
-  riverpod_generator: ^2.4.0     # gera providers do @riverpod
-  custom_lint: ^0.6.4            # lint do Riverpod
-  riverpod_lint: ^2.3.10         # regras específicas do Riverpod
 
   # Testes
   mocktail: ^1.0.4               # mocks para unit tests

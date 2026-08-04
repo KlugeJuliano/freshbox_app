@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:freshbox_app/features/home/home_page.dart';
+import '../core/di/injection.dart';
+import 'package:go_router/go_router.dart';
+
 
 class HortifrutiApp extends StatelessWidget {
   const HortifrutiApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'Hortifruti',
       theme: ThemeData(
         primarySwatch: Colors.green,
       ),
-      home: const HomePage(),
+      routerConfig: getIt<GoRouter>(),
     );
   }
 }

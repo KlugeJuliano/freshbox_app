@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // Provider para o roteador (facilita acesso e testes)
-final routerProvider = Provider<GoRouter>((ref) {
+GoRouter buildRouter() {
   return GoRouter(
     initialLocation: '/',
     debugLogDiagnostics: true,
@@ -144,4 +143,4 @@ final routerProvider = Provider<GoRouter>((ref) {
       body: Center(child: Text('Página não encontrada: ${state.uri}')),
     ),
   );
-});
+}

@@ -4,7 +4,7 @@
   part 'store.g.dart';
 
   @freezed
-  class Store with _$Store {
+  abstract class Store with _$Store {
     const factory Store({
       required int id,
       required String name,

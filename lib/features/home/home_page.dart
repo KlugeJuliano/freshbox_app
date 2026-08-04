@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:freshbox_app/app/theme.dart';
 
 class HortiFrutiApp extends StatelessWidget {
   const HortiFrutiApp({super.key});
