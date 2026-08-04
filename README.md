@@ -28,17 +28,20 @@ A arquitetura é **multiempresa (white-label)**: um único backend serve múltip
 | Tecnologia | Versão | Uso |
 |---|---|---|
 | Flutter | 3.x | Framework mobile |
-| Dart | 3.3+ | Linguagem |
-| Riverpod | 2.5 | Gerenciamento de estado |
-| freezed | 2.5 | Modelos imutáveis |
+| Dart | 3.12+ | Linguagem |
+| flutter_bloc | 9.x | Gerenciamento de estado |
+| get_it | 9.x | Injeção de dependência |
+| freezed | 3.x | Modelos imutáveis (requer `abstract class` na declaração, ver nota abaixo) |
 | Dio | 5.5 | Cliente HTTP |
-| go_router | 14 | Navegação |
+| go_router | 17 | Navegação |
+
+> **Nota — Freezed 3.x:** a partir da v3, classes anotadas com `@freezed` precisam ser declaradas como `abstract class`, não `class`. Omitir isso gera erro de compilação (`Missing concrete implementations`) mesmo com os arquivos `.freezed.dart`/`.g.dart` corretamente gerados.
 
 ---
 
 ## Funcionalidades
 
-### App cliente
+### App cliente (planejado)
 - Vitrine com banners e campanhas programadas
 - Catálogo por categorias com busca
 - Ofertas do dia e produtos em destaque
@@ -48,7 +51,7 @@ A arquitetura é **multiempresa (white-label)**: um único backend serve múltip
 - Pedido enviado como mensagem formatada no WhatsApp
 - Informações da loja: horário, endereço, contato
 
-### Painel admin (no próprio app)
+### Painel admin (no próprio app, planejado)
 - Gestão de categorias e produtos
 - Upload de fotos com geração automática de 3 variantes (thumb, card, full)
 - Banners com período de exibição configurável
@@ -68,64 +71,75 @@ A arquitetura é **multiempresa (white-label)**: um único backend serve múltip
 
 ### Backend — estrutura de pastas
 
-```
 app/
 ├── Actions/
-│   └── PlaceOrderAction.php       # orquestra criação do pedido
+│ └── PlaceOrderAction.php # orquestra criação do pedido
 ├── Http/
-│   ├── Controllers/Api/
-│   │   ├── AuthController.php
-│   │   ├── Admin/                 # endpoints autenticados
-│   │   └── Client/                # endpoints públicos
-│   ├── Middleware/
-│   │   └── ResolveCompany.php     # resolve company_id por header
-│   ├── Requests/                  # validação por FormRequest
-│   └── Resources/                 # serialização das responses
-├── Models/                        # Company, Store, Category, Product...
+│ ├── Controllers/Api/
+│ │ ├── AuthController.php
+│ │ ├── Admin/ # endpoints autenticados
+│ │ └── Client/ # endpoints públicos
+│ ├── Middleware/
+│ │ └── ResolveCompany.php # resolve company_id por header
+│ ├── Requests/ # validação por FormRequest
+│ └── Resources/ # serialização das responses
+├── Models/ # Company, Store, Category, Product...
 └── Services/
-    ├── ImageService.php           # pipeline de imagens (3 variantes)
-    └── WhatsAppService.php        # monta URL do pedido
-```
+├── ImageService.php # pipeline de imagens (3 variantes)
+└── WhatsAppService.php # monta URL do pedido
 
-### App Flutter — estrutura de pastas
 
-```
+### App Flutter — estrutura de pastas (estado atual)
+
 lib/
-├── core/
-│   ├── network/        # DioClient, endpoints, exceções
-│   ├── storage/        # wrapper SharedPreferences
-│   ├── utils/          # formatação de moeda, helper WhatsApp
-│   └── constants/      # baseUrl, companyId
-├── features/
-│   ├── auth/           # login, AuthNotifier
-│   ├── catalog/        # categorias, produtos, busca
-│   ├── cart/           # CartNotifier, CartState, CartItem
-│   ├── checkout/       # CheckoutNotifier, formulário
-│   ├── home/           # banners, destaques
-│   └── store/          # dados operacionais da loja
-├── shared/
-│   └── widgets/        # ErrorRetryWidget, CachedImage, PromoBadge...
 ├── app/
-│   ├── router.dart     # go_router com guards de rota
-│   └── theme.dart      # ThemeData
+│ ├── app.dart # HortifrutiApp — MaterialApp.router
+│ ├── router.dart # buildRouter() — rotas via go_router
+│ └── theme.dart # ThemeData
+├── core/
+│ ├── constants/ # app_constants.dart (baseUrl, companyId)
+│ ├── di/
+│ │ └── injection.dart # setupDependencies() — registro get_it
+│ ├── network/
+│ │ ├── api_endpoint.dart
+│ │ ├── api_exception.dart
+│ │ ├── dio_client.dart
+│ │ └── paginated.dart # wrapper genérico Paginated<T>, reaproveitável
+│ ├── storage/
+│ │ └── local_storage.dart
+│ └── utils/
+│ ├── currency_formatter.dart
+│ └── whatsapp_helper.dart
+├── features/
+│ ├── category/
+│ │ ├── data/ # category_repository.dart
+│ │ └── domain/ # category.dart (model freezed)
+│ ├── home/
+│ │ └── home_page.dart
+│ └── store/
+│ ├── data/ # store_repository.dart
+│ └── domain/ # store.dart (model freezed)
+├── shared/
+│ └── widgets/ # cached_image, error_retry_widget, store_closed_banner
 └── main.dart
-```
 
-Cada feature segue a separação `data → domain → presentation`. Uma feature nunca importa outra diretamente — comunicação é via providers do Riverpod.
+
+Cada feature segue a separação `data → domain` (camada de apresentação ainda não implementada em nenhuma feature). O padrão estabelecido: `domain` define o model (freezed) → `data` implementa o repository usando `DioClient` → repository é registrado no `get_it` via `injection.dart`.
+
+**Ainda não implementado:** `auth/`, `product/`, `cart/`, `checkout/` — endpoints já existem no backend e estão mapeados em `ApiEndpoint`, mas as features Flutter correspondentes não foram criadas.
 
 ### Banco de dados
 
-```
-companies          ← raiz do multiempresa (UUID)
-  └── users        ← admins do painel
-  └── stores       ← dados operacionais da loja
-  └── categories   ← hierarquia com parent_id
-  └── products     ← catálogo com 3 variantes de imagem
-      └── product_images  ← galeria adicional
-  └── banners      ← campanhas com período de exibição
-  └── orders       ← pedidos (UUID)
-      └── order_items     ← snapshot do produto no momento do pedido
-```
+companies ← raiz do multiempresa (UUID)
+└── users ← admins do painel
+└── stores ← dados operacionais da loja
+└── categories ← hierarquia com parent_id
+└── products ← catálogo com 3 variantes de imagem
+└── product_images ← galeria adicional
+└── banners ← campanhas com período de exibição
+└── orders ← pedidos (UUID)
+└── order_items ← snapshot do produto no momento do pedido
+
 
 Toda tabela de negócio tem `company_id NOT NULL`. O isolamento entre clientes é garantido em todas as queries sem exceção.
 
@@ -135,33 +149,31 @@ Toda tabela de negócio tem `company_id NOT NULL`. O isolamento entre clientes �
 
 O admin tira foto no celular (4MB+). O app comprime antes de enviar (~200kb). O servidor gera 3 variantes e salva no R2:
 
-```
 Flutter (image_picker)
-  → flutter_image_compress (≤1200px, JPEG 78%)
-  → upload multipart para Laravel
-  → Intervention Image gera variantes:
-      thumb  300×300px  ~15kb  → grid de produtos, carrinho
-      card   600×600px  ~50kb  → home, destaques
-      full  1200×1200px ~200kb → detalhe do produto
-  → salvas no Cloudflare R2
-  → URLs retornadas e salvas no banco
-```
+→ flutter_image_compress (≤1200px, JPEG 78%)
+→ upload multipart para Laravel
+→ Intervention Image gera variantes:
+thumb 300×300px ~15kb → grid de produtos, carrinho
+card 600×600px ~50kb → home, destaques
+full 1200×1200px ~200kb → detalhe do produto
+→ salvas no Cloudflare R2
+→ URLs retornadas e salvas no banco
+
 
 ---
 
 ## Fluxo do pedido
 
-```
 Cliente monta carrinho
-  → preenche checkout (nome, telefone, endereço)
-  → POST /api/client/orders
-  → backend valida produtos e estoque
-  → cria Order + OrderItems (snapshot)
-  → retorna whatsapp_url
-  → app abre WhatsApp com mensagem formatada
-  → dono do hortifruti recebe e confirma manualmente
-  → admin atualiza status no painel
-```
+→ preenche checkout (nome, telefone, endereço)
+→ POST /api/client/orders
+→ backend valida produtos e estoque
+→ cria Order + OrderItems (snapshot)
+→ retorna whatsapp_url
+→ app abre WhatsApp com mensagem formatada
+→ dono do hortifruti recebe e confirma manualmente
+→ admin atualiza status no painel
+
 
 ---
 
@@ -199,17 +211,17 @@ php artisan serve
 ```
 
 Credenciais do admin criadas pelo seeder:
-```
-Email:  admin@hortifruti.test
-Senha:  password
-```
+
+Email: admin@hortifruti.test
+Senha: password
+
 
 ### App Flutter
 
 ```bash
-cd hortifruti-app
+cd freshbox_app
 flutter pub get
-dart run build_runner build --delete-conflicting-outputs
+dart run build_runner build
 
 # Editar lib/core/constants/app_constants.dart
 # baseUrl: 'http://10.0.2.2:8000/api'   ← emulador Android
@@ -218,6 +230,8 @@ dart run build_runner build --delete-conflicting-outputs
 
 flutter run
 ```
+
+> Se o build_runner reclamar de conflito de outputs, use `dart run build_runner clean` antes de rodar `build` de novo — **não** apague os arquivos `.freezed.dart`/`.g.dart` manualmente, isso dessincroniza o cache do build_runner e causa erros de compilação difíceis de diagnosticar.
 
 ---
 
@@ -262,10 +276,9 @@ flutter run
 
 O projeto é estruturado como produto reaproveitável:
 
-```
 Taxa de implantação (única)
-  + Mensalidade por loja
-```
+
+Mensalidade por loja
 
 Planos sugeridos:
 
@@ -290,20 +303,31 @@ O pedido guarda um snapshot completo do produto (nome, preço, unidade) no momen
 **`business_hours` como JSON**
 `{"mon":{"open":"08:00","close":"18:00"},"sun":null}`. Flexível para feriados e horários especiais sem alterar o schema.
 
-**`CartNotifier` síncrono**
-`SharedPreferences` é inicializado antes do `runApp` e injetado via `ProviderScope.overrides`. O `build()` do notifier é síncrono — sem `AsyncNotifier`, sem tela de loading para o carrinho.
+**Gerenciamento de estado: get_it + flutter_bloc (não Riverpod)**
+O projeto começou com Riverpod parcialmente implementado, mas foi revertido antes de qualquer feature de UI depender dele — troca feita cedo o suficiente para não gerar retrabalho relevante. `get_it` cuida de instâncias singleton (DioClient, repositories, GoRouter); `flutter_bloc` cuida do ciclo de vida de estado por tela.
 
-**`.select()` nos cards de produto**
-`ref.watch(cartNotifierProvider.select((s) => s.quantityOf(id)))` garante que cada card rebuilda apenas quando a quantidade do seu produto específico muda — não quando qualquer item do carrinho muda.
+**`Paginated<T>` genérico**
+Endpoints de listagem do Laravel (`categories`, `products`, futuramente `orders` no admin) retornam paginação no formato `{data, links, meta}`. Em vez de tratar cada listagem como caso especial, existe um wrapper genérico `Paginated<T>` em `core/network/` que extrai `data`, `current_page`, `last_page` e `total` do `meta`, reaproveitado por qualquer feature paginada.
 
 ---
 
 ## Status do projeto
 
-- [x] Backend completo e testado
+**Backend**
+- [x] Estrutura completa (models, controllers, middleware multiempresa)
 - [x] Migrations com multiempresa
 - [x] Pipeline de imagens (3 variantes + R2)
 - [x] Fluxo de pedido com WhatsApp
-- [ ] App Flutter — em desenvolvimento
+
+**App Flutter**
+- [x] Fundação: DI (get_it), navegação (go_router), rede (Dio + interceptors)
+- [x] Feature Store: model + repository, integração validada contra a API
+- [x] Feature Category: model + repository, `Paginated<T>` genérico
+- [ ] `CategoryBloc` + tela de Categorias
+- [ ] Feature Produtos (featured, promo, busca, detalhe)
+- [ ] Feature Carrinho
+- [ ] Feature Checkout / Pedidos
+- [ ] Autenticação (admin)
+- [ ] Painel admin
 - [ ] Deploy em produção
 - [ ] Primeiro cliente em uso
