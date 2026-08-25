@@ -47,3 +47,5 @@ app.*.map.json
 # Code generation
 *.freezed.dart
 *.g.dart
+
+opencode.json

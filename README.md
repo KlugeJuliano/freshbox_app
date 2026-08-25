@@ -113,7 +113,12 @@ lib/
 ├── features/
 │ ├── category/
 │ │ ├── data/ # category_repository.dart
-│ │ └── domain/ # category.dart (model freezed)
+│ │ ├── domain/ # category.dart (model freezed)
+│ │ └── presentation/ # category_bloc.dart, categories_page.dart
+│ ├── product/
+│ │ ├── data/ # product_repository.dart
+│ │ ├── domain/ # product.dart, product_image.dart, product_unit.dart (models freezed)
+│ │ └── presentation/ # product_list_bloc.dart, product_detail_bloc.dart, product_list_page.dart, product_detail_page.dart, widgets/
 │ ├── home/
 │ │ └── home_page.dart
 │ └── store/
@@ -124,9 +129,7 @@ lib/
 └── main.dart
 
 
-Cada feature segue a separação `data → domain` (camada de apresentação ainda não implementada em nenhuma feature). O padrão estabelecido: `domain` define o model (freezed) → `data` implementa o repository usando `DioClient` → repository é registrado no `get_it` via `injection.dart`.
-
-**Ainda não implementado:** `auth/`, `product/`, `cart/`, `checkout/` — endpoints já existem no backend e estão mapeados em `ApiEndpoint`, mas as features Flutter correspondentes não foram criadas.
+Cada feature segue a separação `data → domain → presentation`. O padrão estabelecido: `domain` define o model (freezed) → `data` implementa o repository usando `DioClient` → `presentation` implementa Bloc + Pages → tudo registrado no `get_it` via `injection.dart`.
 
 ### Banco de dados
 
@@ -322,9 +325,8 @@ Endpoints de listagem do Laravel (`categories`, `products`, futuramente `orders`
 **App Flutter**
 - [x] Fundação: DI (get_it), navegação (go_router), rede (Dio + interceptors)
 - [x] Feature Store: model + repository, integração validada contra a API
-- [x] Feature Category: model + repository, `Paginated<T>` genérico
-- [ ] `CategoryBloc` + tela de Categorias
-- [ ] Feature Produtos (featured, promo, busca, detalhe)
+- [x] Feature Category: model + repository + bloc + page, `Paginated<T>` genérico
+- [x] Feature Product: model + repository + bloc (list/detail) + pages (list/detail) + widgets
 - [ ] Feature Carrinho
 - [ ] Feature Checkout / Pedidos
 - [ ] Autenticação (admin)

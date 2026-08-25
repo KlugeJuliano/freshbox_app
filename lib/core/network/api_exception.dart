@@ -19,7 +19,8 @@ class ApiException implements Exception {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
-        return ApiException(message: 'Tempo de conexão esgotado. Verifique sua internet.');
+        return ApiException(
+            message: 'Tempo de conexão esgotado. Verifique sua internet.');
       case DioExceptionType.badResponse:
         return _handleError(error.response?.statusCode, error.response?.data);
       case DioExceptionType.cancel:
@@ -27,7 +28,8 @@ class ApiException implements Exception {
       case DioExceptionType.connectionError:
         return ApiException(message: 'Sem conexão com a internet.');
       default:
-        return ApiException(message: 'Ocorreu um erro inesperado. Tente novamente.');
+        return ApiException(
+            message: 'Ocorreu um erro inesperado. Tente novamente.');
     }
   }
 

@@ -1,5 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+
+import '../core/di/injection.dart';
+import '../features/category/presentation/categories_page.dart';
+import '../features/product/presentation/product_detail_bloc.dart';
+import '../features/product/presentation/product_detail_page.dart';
+import '../features/product/presentation/product_list_bloc.dart';
+import '../features/product/presentation/product_list_page.dart';
+import '../features/product/presentation/product_list_event.dart';
+import '../features/product/presentation/product_detail_event.dart';
+import '../features/product/presentation/product_list_type.dart';
 
 // Provider para o roteador (facilita acesso e testes)
 GoRouter buildRouter() {
@@ -11,24 +22,59 @@ GoRouter buildRouter() {
       GoRoute(
         path: '/',
         name: 'home',
-        builder: (context, state) => const Scaffold(body: Center(child: Text('Home (Vitrine)'))),
+        builder: (context, state) =>
+            const Scaffold(body: Center(child: Text('Home (Vitrine)'))),
         routes: [
+          GoRoute(
+            path: 'products/featured',
+            name: 'featured_products',
+            builder: (context, state) => BlocProvider(
+              create: (context) => getIt<ProductListBloc>()
+                ..add(const ProductListEvent.loadFeatured()),
+              child: const ProductListPage(type: ProductListType.featured),
+            ),
+          ),
+          GoRoute(
+            path: 'products/promo',
+            name: 'promo_products',
+            builder: (context, state) => BlocProvider(
+              create: (context) => getIt<ProductListBloc>()
+                ..add(const ProductListEvent.loadPromo()),
+              child: const ProductListPage(type: ProductListType.promo),
+            ),
+          ),
           GoRoute(
             path: 'search',
             name: 'search',
-            builder: (context, state) => const Scaffold(body: Center(child: Text('Busca de Produtos'))),
+            builder: (context, state) => BlocProvider(
+              create: (context) => getIt<ProductListBloc>()
+                ..add(ProductListEvent.search(
+                  state.uri.queryParameters['q'] ?? '',
+                )),
+              child: ProductListPage(
+                type: ProductListType.search,
+                searchQuery: state.uri.queryParameters['q'],
+              ),
+            ),
           ),
           GoRoute(
             path: 'categories',
             name: 'categories',
-            builder: (context, state) => const Scaffold(body: Center(child: Text('Categorias'))),
+            builder: (context, state) => const CategoriesPage(),
             routes: [
               GoRoute(
                 path: ':slug',
                 name: 'category_products',
                 builder: (context, state) {
                   final slug = state.pathParameters['slug']!;
-                  return Scaffold(body: Center(child: Text('Produtos da Categoria: $slug')));
+                  return BlocProvider(
+                    create: (context) => getIt<ProductListBloc>()
+                      ..add(ProductListEvent.loadByCategory(slug)),
+                    child: ProductListPage(
+                      type: ProductListType.category,
+                      categorySlug: slug,
+                    ),
+                  );
                 },
               ),
             ],
@@ -38,18 +84,24 @@ GoRouter buildRouter() {
             name: 'product_detail',
             builder: (context, state) {
               final slug = state.pathParameters['slug']!;
-              return Scaffold(body: Center(child: Text('Detalhe do Produto: $slug')));
+              return BlocProvider(
+                create: (context) => getIt<ProductDetailBloc>()
+                  ..add(ProductDetailEvent.load(slug)),
+                child: ProductDetailPage(slug: slug),
+              );
             },
           ),
           GoRoute(
             path: 'cart',
             name: 'cart',
-            builder: (context, state) => const Scaffold(body: Center(child: Text('Carrinho'))),
+            builder: (context, state) =>
+                const Scaffold(body: Center(child: Text('Carrinho'))),
             routes: [
               GoRoute(
                 path: 'checkout',
                 name: 'checkout',
-                builder: (context, state) => const Scaffold(body: Center(child: Text('Checkout (Finalizar Pedido)'))),
+                builder: (context, state) => const Scaffold(
+                    body: Center(child: Text('Checkout (Finalizar Pedido)'))),
               ),
             ],
           ),
@@ -60,7 +112,8 @@ GoRouter buildRouter() {
       GoRoute(
         path: '/login',
         name: 'login',
-        builder: (context, state) => const Scaffold(body: Center(child: Text('Login Admin'))),
+        builder: (context, state) =>
+            const Scaffold(body: Center(child: Text('Login Admin'))),
       ),
 
       // ─── ADMIN ROUTES ──────────────────────────────────────────
@@ -68,24 +121,28 @@ GoRouter buildRouter() {
       GoRoute(
         path: '/admin',
         name: 'admin_dashboard',
-        builder: (context, state) => const Scaffold(body: Center(child: Text('Admin Dashboard'))),
+        builder: (context, state) =>
+            const Scaffold(body: Center(child: Text('Admin Dashboard'))),
         routes: [
           GoRoute(
             path: 'categories',
             name: 'admin_categories',
-            builder: (context, state) => const Scaffold(body: Center(child: Text('Gestão de Categorias'))),
+            builder: (context, state) => const Scaffold(
+                body: Center(child: Text('Gestão de Categorias'))),
             routes: [
               GoRoute(
                 path: 'create',
                 name: 'admin_category_create',
-                builder: (context, state) => const Scaffold(body: Center(child: Text('Nova Categoria'))),
+                builder: (context, state) =>
+                    const Scaffold(body: Center(child: Text('Nova Categoria'))),
               ),
               GoRoute(
                 path: ':id',
                 name: 'admin_category_edit',
                 builder: (context, state) {
                   final id = state.pathParameters['id']!;
-                  return Scaffold(body: Center(child: Text('Editar Categoria ID: $id')));
+                  return Scaffold(
+                      body: Center(child: Text('Editar Categoria ID: $id')));
                 },
               ),
             ],
@@ -93,19 +150,22 @@ GoRouter buildRouter() {
           GoRoute(
             path: 'products',
             name: 'admin_products',
-            builder: (context, state) => const Scaffold(body: Center(child: Text('Gestão de Produtos'))),
+            builder: (context, state) =>
+                const Scaffold(body: Center(child: Text('Gestão de Produtos'))),
             routes: [
               GoRoute(
                 path: 'create',
                 name: 'admin_product_create',
-                builder: (context, state) => const Scaffold(body: Center(child: Text('Novo Produto'))),
+                builder: (context, state) =>
+                    const Scaffold(body: Center(child: Text('Novo Produto'))),
               ),
               GoRoute(
                 path: ':id',
                 name: 'admin_product_edit',
                 builder: (context, state) {
                   final id = state.pathParameters['id']!;
-                  return Scaffold(body: Center(child: Text('Editar Produto ID: $id')));
+                  return Scaffold(
+                      body: Center(child: Text('Editar Produto ID: $id')));
                 },
               ),
             ],
@@ -113,19 +173,22 @@ GoRouter buildRouter() {
           GoRoute(
             path: 'banners',
             name: 'admin_banners',
-            builder: (context, state) => const Scaffold(body: Center(child: Text('Gestão de Banners'))),
+            builder: (context, state) =>
+                const Scaffold(body: Center(child: Text('Gestão de Banners'))),
           ),
           GoRoute(
             path: 'orders',
             name: 'admin_orders',
-            builder: (context, state) => const Scaffold(body: Center(child: Text('Gestão de Pedidos'))),
+            builder: (context, state) =>
+                const Scaffold(body: Center(child: Text('Gestão de Pedidos'))),
             routes: [
               GoRoute(
                 path: ':id',
                 name: 'admin_order_detail',
                 builder: (context, state) {
                   final id = state.pathParameters['id']!;
-                  return Scaffold(body: Center(child: Text('Detalhe do Pedido ID: $id')));
+                  return Scaffold(
+                      body: Center(child: Text('Detalhe do Pedido ID: $id')));
                 },
               ),
             ],
@@ -133,7 +196,8 @@ GoRouter buildRouter() {
           GoRoute(
             path: 'settings',
             name: 'admin_settings',
-            builder: (context, state) => const Scaffold(body: Center(child: Text('Configurações da Loja'))),
+            builder: (context, state) => const Scaffold(
+                body: Center(child: Text('Configurações da Loja'))),
           ),
         ],
       ),

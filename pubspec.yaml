@@ -25,6 +25,7 @@ dependencies:
   # ── Rede ──────────────────────────────────────────────────
   dio: ^5.5.0                    # cliente HTTP com interceptors
   pretty_dio_logger: ^1.3.1      # log de requests em dev
+  rxdart: ^0.28.0                # transformers para debounce/throttle no Bloc
 
   # ── Imagens ───────────────────────────────────────────────
   cached_network_image: ^3.3.1   # cache de imagens + placeholder
@@ -63,6 +64,7 @@ dev_dependencies:
 
   # Testes
   mocktail: ^1.0.4               # mocks para unit tests
+  bloc_test: ^10.0.0              # testing utilities for bloc (compatible with flutter_bloc 9.x)
 
 flutter:
   uses-material-design: true

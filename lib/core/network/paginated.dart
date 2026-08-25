@@ -3,7 +3,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'paginated.freezed.dart';
 
 @Freezed(genericArgumentFactories: true)
- abstract class Paginated<T> with _$Paginated<T> {
+abstract class Paginated<T> with _$Paginated<T> {
   const factory Paginated({
     required List<T> data,
     required int currentPage,
