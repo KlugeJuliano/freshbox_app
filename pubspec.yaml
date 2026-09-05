@@ -33,7 +33,7 @@ dependencies:
   image_picker: ^1.1.2           # câmera / galeria
 
   # ── Storage local ─────────────────────────────────────────
-  shared_preferences: ^2.3.2     # persistência do carrinho e token
+  shared_preferences: ^2.3.2     # persistência do carrinho
 
   # ── UI / UX ───────────────────────────────────────────────
   shimmer: ^3.0.0                # skeleton loading nos grids
@@ -50,6 +50,7 @@ dependencies:
 
   # ── Formulários ───────────────────────────────────────────
   mask_text_input_formatter: ^2.9.0  # máscara de telefone e CEP
+  flutter_secure_storage: ^11.0.0
 
 dev_dependencies:
   flutter_test:

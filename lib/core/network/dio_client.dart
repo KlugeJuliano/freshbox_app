@@ -4,6 +4,7 @@ import 'api_exception.dart';
 
 class DioClient {
   Dio _dio;
+  String Function()? _tokenProvider;
 
   DioClient(this._dio) {
     _dio = Dio(
@@ -22,6 +23,32 @@ class DioClient {
     _dio.interceptors.add(LogInterceptor(
       requestBody: true,
       responseBody: true,
+    ));
+  }
+
+  void setTokenProvider(String Function()? provider) {
+    _tokenProvider = provider;
+    if (provider != null) {
+      _addAuthInterceptor();
+    }
+  }
+
+  void _addAuthInterceptor() {
+    _dio.interceptors.add(InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        final token = _tokenProvider?.call();
+        if (token != null && token.isNotEmpty) {
+          options.headers['Authorization'] = 'Bearer $token';
+        }
+        return handler.next(options);
+      },
+      onError: (error, handler) {
+        if (error.response?.statusCode == 401) {
+          // Token inválido/expirado - limpa tokens locais e dispara logout
+          // Nota: não chamamos /auth/logout aqui pois o token já é inválido no servidor
+        }
+        return handler.next(error);
+      },
     ));
   }
 
@@ -149,13 +176,15 @@ class DioClient {
     }
   }
 
-  // Método para adicionar o token de autenticação após o login
+  // Método legacy - mantido para compatibilidade, mas delega ao provider
   void setToken(String token) {
-    _dio.options.headers['Authorization'] = 'Bearer $token';
+    _tokenProvider = () => token;
+    _addAuthInterceptor();
   }
 
-  // Método para remover o token ao fazer logout
+  // Método legacy - mantido para compatibilidade
   void removeToken() {
+    _tokenProvider = null;
     _dio.options.headers.remove('Authorization');
   }
 }
