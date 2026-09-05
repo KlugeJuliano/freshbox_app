@@ -100,17 +100,23 @@ lib/
 │ ├── constants/ # app_constants.dart (baseUrl, companyId)
 │ ├── di/
 │ │ └── injection.dart # setupDependencies() — registro get_it
+│ ├── errors/ # api_error_mapper.dart — parser compartilhado de erros
 │ ├── network/
 │ │ ├── api_endpoint.dart
 │ │ ├── api_exception.dart
 │ │ ├── dio_client.dart
 │ │ └── paginated.dart # wrapper genérico Paginated<T>, reaproveitável
+│ ├── router/ # go_router_refresh_stream.dart — listener de auth state
 │ ├── storage/
 │ │ └── local_storage.dart
 │ └── utils/
 │ ├── currency_formatter.dart
 │ └── whatsapp_helper.dart
 ├── features/
+│ ├── auth/
+│ │ ├── data/ # auth_local_datasource.dart, auth_repository.dart
+│ │ ├── domain/ # user.dart, auth_tokens.dart, login_credentials.dart (models freezed)
+│ │ └── presentation/ # auth_bloc.dart, login_page.dart (a implementar)
 │ ├── category/
 │ │ ├── data/ # category_repository.dart
 │ │ ├── domain/ # category.dart (model freezed)
@@ -234,6 +240,8 @@ dart run build_runner build
 flutter run
 ```
 
+> **Android:** `minSdk = 23` configurado em `android/app/build.gradle.kts` (requisito do `flutter_secure_storage` 11.x / EncryptedSharedPreferences).
+
 > Se o build_runner reclamar de conflito de outputs, use `dart run build_runner clean` antes de rodar `build` de novo — **não** apague os arquivos `.freezed.dart`/`.g.dart` manualmente, isso dessincroniza o cache do build_runner e causa erros de compilação difíceis de diagnosticar.
 
 ---
@@ -312,6 +320,15 @@ O projeto começou com Riverpod parcialmente implementado, mas foi revertido ant
 **`Paginated<T>` genérico**
 Endpoints de listagem do Laravel (`categories`, `products`, futuramente `orders` no admin) retornam paginação no formato `{data, links, meta}`. Em vez de tratar cada listagem como caso especial, existe um wrapper genérico `Paginated<T>` em `core/network/` que extrai `data`, `current_page`, `last_page` e `total` do `meta`, reaproveitado por qualquer feature paginada.
 
+**Autenticação (Admin) — Fundação**
+- **JWT (Laravel Sanctum)** via header `Authorization: Bearer <token>` — apenas admin, cliente não autentica
+- **Token provider no DioClient** — fonte única via `String Function()` injetado pelo `AuthBloc`; interceptor injeta header em requests, trata 401 limpando storage local + disparando `logout` event (sem chamar `/auth/logout` redundante)
+- **Storage seguro** — `flutter_secure_storage` (EncryptedSharedPreferences Android, Keychain iOS) via `AuthLocalDataSource`; `rememberMe = true` persiste em disco, `false` só em memória (campo `_memoryToken` no repo)
+- **Parsers separados** — `POST /auth/login` retorna `{ token, user }`; `GET /auth/me` retorna User na raiz — parsers isolados no `AuthRepository` (`parseLoginUser` + `me()`)
+- **Error mapper compartilhado** — `lib/core/errors/api_error_mapper.dart` usado por `CheckoutBloc` e `AuthBloc` (422 Laravel, 401/403, 5xx, timeout)
+- **GoRouter + AuthBloc** — `GoRouterRefreshStream` escuta `AuthBloc.stream`; `redirect` respeita estado `Checking` (splash), `Authenticated` (acesso admin), `Unauthenticated` (redirect `/login?redirect=...`)
+- **Estados AuthBloc** — `Checking` (inicial, resolve token), `Authenticated(User)`, `Unauthenticated`, `Loading`, `Error`; sem refresh token (backend não suporta)
+
 ---
 
 ## Status do projeto
@@ -327,9 +344,11 @@ Endpoints de listagem do Laravel (`categories`, `products`, futuramente `orders`
 - [x] Feature Store: model + repository, integração validada contra a API
 - [x] Feature Category: model + repository + bloc + page, `Paginated<T>` genérico
 - [x] Feature Product: model + repository + bloc (list/detail) + pages (list/detail) + widgets
-- [ ] Feature Carrinho
-- [ ] Feature Checkout / Pedidos
-- [ ] Autenticação (admin)
+- [x] Feature Home: vitrine com banners, categorias, destaques, promoções
+- [x] Feature Carrinho: model + repository (local storage por companyId) + bloc + page + badge global
+- [x] Feature Checkout: form entrega/retirada + validação + WhatsApp fallback + navegação pós-sucesso
+- [x] Autenticação (admin): fundação — models (User, AuthTokens, LoginCredentials), AuthRepository (login/me/logout com parsers corretos), AuthLocalDataSource (FlutterSecureStorage com rememberMe), DioClient interceptor com token provider (fonte única, 401 → logout automático), error mapper compartilhado, GoRouterRefreshStream
+- [ ] AuthBloc + LoginPage + integração router (redirects, Checking state)
 - [ ] Painel admin
 - [ ] Deploy em produção
 - [ ] Primeiro cliente em uso
