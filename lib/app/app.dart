@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/di/injection.dart';
+import '../app/theme.dart';
 import 'package:go_router/go_router.dart';
 
 class HortifrutiApp extends StatelessWidget {
@@ -9,9 +10,7 @@ class HortifrutiApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       title: 'Hortifruti',
-      theme: ThemeData(
-        primarySwatch: Colors.green,
-      ),
+      theme: AppTheme.lightTheme,
       routerConfig: getIt<GoRouter>(),
     );
   }

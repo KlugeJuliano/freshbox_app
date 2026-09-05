@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:freshbox_app/core/utils/currency_formatter.dart';
+import 'package:freshbox_app/features/cart/domain/cart_item.dart';
+import 'package:freshbox_app/features/cart/presentation/cart_bloc.dart';
+import 'package:freshbox_app/features/cart/presentation/cart_event.dart';
 import '../../domain/product.dart';
 
 class ProductCard extends StatelessWidget {
@@ -33,12 +37,39 @@ class ProductCard extends StatelessWidget {
           children: [
             // Imagem do produto
             Expanded(
-              child: _buildImage(hasImage),
+              child: Stack(
+                children: [
+                  _buildImage(hasImage),
+                  // Add to Cart FAB
+                  Positioned(
+                    bottom: 8,
+                    right: 8,
+                    child: FloatingActionButton.small(
+                      onPressed: () => _addToCart(context),
+                      backgroundColor: theme.colorScheme.primary,
+                      foregroundColor: Colors.white,
+                      child: const Icon(Icons.add_shopping_cart, size: 20),
+                    ),
+                  ),
+                ],
+              ),
             ),
             // Info do produto
             _buildInfo(theme),
           ],
         ),
+      ),
+    );
+  }
+
+  void _addToCart(BuildContext context) {
+    final cartItem = CartItem.fromProduct(product);
+    context.read<CartBloc>().add(CartEvent.addItem(cartItem));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${product.name} adicionado ao carrinho'),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }

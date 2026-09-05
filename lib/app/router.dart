@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../core/di/injection.dart';
 import '../features/category/presentation/categories_page.dart';
+import '../features/home/presentation/home_bloc.dart';
+import '../features/home/presentation/home_event.dart';
+import '../features/home/home_page.dart';
 import '../features/product/presentation/product_detail_bloc.dart';
 import '../features/product/presentation/product_detail_page.dart';
 import '../features/product/presentation/product_list_bloc.dart';
@@ -11,6 +14,9 @@ import '../features/product/presentation/product_list_page.dart';
 import '../features/product/presentation/product_list_event.dart';
 import '../features/product/presentation/product_detail_event.dart';
 import '../features/product/presentation/product_list_type.dart';
+import '../features/cart/presentation/cart_bloc.dart';
+import '../features/cart/presentation/cart_event.dart';
+import '../features/cart/presentation/cart_page.dart';
 
 // Provider para o roteador (facilita acesso e testes)
 GoRouter buildRouter() {
@@ -22,8 +28,10 @@ GoRouter buildRouter() {
       GoRoute(
         path: '/',
         name: 'home',
-        builder: (context, state) =>
-            const Scaffold(body: Center(child: Text('Home (Vitrine)'))),
+        builder: (context, state) => BlocProvider(
+          create: (context) => getIt<HomeBloc>()..add(const HomeEvent.loadHome()),
+          child: const HomePage(),
+        ),
         routes: [
           GoRoute(
             path: 'products/featured',
@@ -94,14 +102,19 @@ GoRouter buildRouter() {
           GoRoute(
             path: 'cart',
             name: 'cart',
-            builder: (context, state) =>
-                const Scaffold(body: Center(child: Text('Carrinho'))),
+            builder: (context, state) => BlocProvider.value(
+              value: getIt<CartBloc>()..add(const CartEvent.loadCart()),
+              child: const CartPage(),
+            ),
             routes: [
               GoRoute(
                 path: 'checkout',
                 name: 'checkout',
-                builder: (context, state) => const Scaffold(
-                    body: Center(child: Text('Checkout (Finalizar Pedido)'))),
+                builder: (context, state) => BlocProvider.value(
+                  value: getIt<CartBloc>(),
+                  child: const Scaffold(
+                      body: Center(child: Text('Checkout (Finalizar Pedido)'))),
+                ),
               ),
             ],
           ),

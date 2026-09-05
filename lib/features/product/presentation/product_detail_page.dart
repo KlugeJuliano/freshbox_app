@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:badges/badges.dart' as badges;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 
 import 'package:freshbox_app/core/utils/currency_formatter.dart';
+import 'package:freshbox_app/features/cart/domain/cart.dart';
+import 'package:freshbox_app/features/cart/presentation/cart_bloc.dart';
+import 'package:freshbox_app/features/cart/presentation/cart_state.dart';
+import 'package:freshbox_app/features/cart/domain/cart_item.dart';
+import 'package:freshbox_app/features/cart/presentation/cart_event.dart';
 import 'package:freshbox_app/features/product/domain/product.dart';
 import 'package:freshbox_app/features/product/domain/product_image.dart';
 import 'package:freshbox_app/features/product/presentation/product_detail_bloc.dart';
 import 'package:freshbox_app/features/product/presentation/product_detail_event.dart';
 import 'package:freshbox_app/features/product/presentation/product_detail_state.dart';
+import 'package:freshbox_app/core/di/injection.dart';
 
 class ProductDetailPage extends StatelessWidget {
   const ProductDetailPage({super.key, required this.slug});
@@ -61,6 +69,9 @@ class _LoadedView extends StatelessWidget {
       appBar: AppBar(
         title: Text(product.name),
         centerTitle: true,
+        actions: [
+          _CartBadge(),
+        ],
       ),
       body: CustomScrollView(
         slivers: [
@@ -189,11 +200,14 @@ class _LoadedView extends StatelessWidget {
               child: FilledButton.icon(
                 onPressed: product.isAvailable
                     ? () {
-                        // TODO: Implementar adicionar ao carrinho
+                        final cartItem = CartItem.fromProduct(product);
+                        context.read<CartBloc>().add(CartEvent.addItem(cartItem));
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                              content: Text(
-                                  '${product.name} adicionado ao carrinho')),
+                            content: Text('${product.name} adicionado ao carrinho'),
+                            duration: const Duration(seconds: 2),
+                            behavior: SnackBarBehavior.floating,
+                          ),
                         );
                       }
                     : null,
@@ -222,8 +236,9 @@ class _ProductImageCarousel extends StatelessWidget {
     final urls = <String>[];
     if (images.full != null && images.full!.isNotEmpty) urls.add(images.full!);
     if (images.card != null && images.card!.isNotEmpty) urls.add(images.card!);
-    if (images.thumb != null && images.thumb!.isNotEmpty)
+    if (images.thumb != null && images.thumb!.isNotEmpty) {
       urls.add(images.thumb!);
+    }
     return urls;
   }
 
@@ -311,6 +326,38 @@ class _ErrorView extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _CartBadge extends StatelessWidget {
+  const _CartBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<CartState>(
+      stream: getIt<CartBloc>().stream,
+      initialData: getIt<CartBloc>().state,
+      builder: (context, snapshot) {
+        final count = snapshot.data?.maybeWhen(
+          loaded: (cart) => cart.itemsCount,
+          orElse: () => 0,
+        ) ?? 0;
+        if (count == 0) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: badges.Badge(
+            badgeContent: Text(
+              '$count',
+              style: const TextStyle(color: Colors.white, fontSize: 10),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.shopping_cart),
+              onPressed: () => context.push('/cart'),
+            ),
+          ),
+        );
+      },
     );
   }
 }

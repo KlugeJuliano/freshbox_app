@@ -10,6 +10,10 @@ import '../../features/category/presentation/category_bloc.dart';
 import '../../features/product/data/product_repository.dart';
 import '../../features/product/presentation/product_list_bloc.dart';
 import '../../features/product/presentation/product_detail_bloc.dart';
+import '../../features/home/data/home_repository.dart';
+import '../../features/home/presentation/home_bloc.dart';
+import '../../features/cart/data/cart_repository.dart';
+import '../../features/cart/presentation/cart_bloc.dart';
 
 import 'package:go_router/go_router.dart';
 import '../../app/router.dart';
@@ -32,6 +36,10 @@ Future<void> setupDependencies() async {
       () => CategoryRepository(getIt<DioClient>()));
   getIt.registerLazySingleton<ProductRepository>(
       () => ProductRepository(getIt<DioClient>()));
+  getIt.registerLazySingleton<HomeRepository>(
+      () => HomeRepository(getIt<DioClient>()));
+  getIt.registerLazySingleton<CartRepository>(
+      () => CartRepository(getIt<LocalStorage>()));
 
   // Blocs
   getIt.registerFactory<CategoryBloc>(
@@ -40,6 +48,8 @@ Future<void> setupDependencies() async {
       () => ProductListBloc(getIt<ProductRepository>()));
   getIt.registerFactory<ProductDetailBloc>(
       () => ProductDetailBloc(getIt<ProductRepository>()));
+  getIt.registerFactory<HomeBloc>(() => HomeBloc(getIt<HomeRepository>()));
+  getIt.registerLazySingleton<CartBloc>(() => CartBloc(getIt<CartRepository>()));
 
   getIt.registerLazySingleton<GoRouter>(() => buildRouter());
 }

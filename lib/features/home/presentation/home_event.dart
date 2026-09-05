@@ -1,0 +1,9 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'home_event.freezed.dart';
+
+@freezed
+abstract class HomeEvent with _$HomeEvent {
+  const factory HomeEvent.loadHome() = _LoadHome;
+  const factory HomeEvent.refreshHome() = _RefreshHome;
+}

@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:badges/badges.dart' as badges;
 
 import 'package:freshbox_app/core/network/paginated.dart';
+import 'package:freshbox_app/features/cart/domain/cart.dart';
+import 'package:freshbox_app/features/cart/presentation/cart_bloc.dart';
+import 'package:freshbox_app/features/cart/presentation/cart_state.dart';
 import 'package:freshbox_app/features/product/domain/product.dart';
 import 'package:freshbox_app/features/product/presentation/product_list_bloc.dart';
 import 'package:freshbox_app/features/product/presentation/product_list_event.dart';
@@ -10,6 +14,7 @@ import 'package:freshbox_app/features/product/presentation/product_list_state.da
 import 'package:freshbox_app/features/product/presentation/product_list_type.dart';
 import 'package:freshbox_app/features/product/presentation/widgets/product_card.dart';
 import 'package:freshbox_app/features/product/presentation/widgets/product_shimmer.dart';
+import 'package:freshbox_app/core/di/injection.dart';
 
 class ProductListPage extends StatelessWidget {
   const ProductListPage({
@@ -29,6 +34,9 @@ class ProductListPage extends StatelessWidget {
       appBar: AppBar(
         title: Text(_appBarTitle),
         centerTitle: true,
+        actions: [
+          _CartBadge(),
+        ],
       ),
       body: BlocBuilder<ProductListBloc, ProductListState>(
         builder: (context, state) {
@@ -207,6 +215,38 @@ class _ErrorView extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _CartBadge extends StatelessWidget {
+  const _CartBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<CartState>(
+      stream: getIt<CartBloc>().stream,
+      initialData: getIt<CartBloc>().state,
+      builder: (context, snapshot) {
+        final count = snapshot.data?.maybeWhen(
+          loaded: (cart) => cart.itemsCount,
+          orElse: () => 0,
+        ) ?? 0;
+        if (count == 0) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: badges.Badge(
+            badgeContent: Text(
+              '$count',
+              style: const TextStyle(color: Colors.white, fontSize: 10),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.shopping_cart),
+              onPressed: () => context.push('/cart'),
+            ),
+          ),
+        );
+      },
     );
   }
 }

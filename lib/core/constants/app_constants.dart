@@ -11,6 +11,7 @@ class AppConstants {
   static const String companyId = '019da21a-7a40-7115-b69a-0fbe11d46fe8';
   // SharedPreferences Keys
   static const String cartKey = 'freshbox_cart';
+  static const String companyIdKey = 'freshbox_company_id';
   static const String tokenKey = 'freshbox_token';
   static const String userKey = 'freshbox_user';
 }
