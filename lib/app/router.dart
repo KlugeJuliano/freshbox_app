@@ -17,6 +17,8 @@ import '../features/product/presentation/product_list_type.dart';
 import '../features/cart/presentation/cart_bloc.dart';
 import '../features/cart/presentation/cart_event.dart';
 import '../features/cart/presentation/cart_page.dart';
+import '../features/checkout/presentation/checkout_bloc.dart';
+import '../features/checkout/presentation/checkout_page.dart';
 
 // Provider para o roteador (facilita acesso e testes)
 GoRouter buildRouter() {
@@ -107,15 +109,17 @@ GoRouter buildRouter() {
               child: const CartPage(),
             ),
             routes: [
-              GoRoute(
-                path: 'checkout',
-                name: 'checkout',
-                builder: (context, state) => BlocProvider.value(
-                  value: getIt<CartBloc>(),
-                  child: const Scaffold(
-                      body: Center(child: Text('Checkout (Finalizar Pedido)'))),
-                ),
-              ),
+GoRoute(
+            path: 'checkout',
+            name: 'checkout',
+            builder: (context, state) => MultiBlocProvider(
+              providers: [
+                BlocProvider.value(value: getIt<CartBloc>()),
+                BlocProvider(create: (_) => getIt<CheckoutBloc>()),
+              ],
+              child: const CheckoutPage(),
+            ),
+          ),
             ],
           ),
         ],

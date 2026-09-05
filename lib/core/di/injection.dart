@@ -14,6 +14,8 @@ import '../../features/home/data/home_repository.dart';
 import '../../features/home/presentation/home_bloc.dart';
 import '../../features/cart/data/cart_repository.dart';
 import '../../features/cart/presentation/cart_bloc.dart';
+import '../../features/order/data/order_repository.dart';
+import '../../features/checkout/presentation/checkout_bloc.dart';
 
 import 'package:go_router/go_router.dart';
 import '../../app/router.dart';
@@ -40,6 +42,8 @@ Future<void> setupDependencies() async {
       () => HomeRepository(getIt<DioClient>()));
   getIt.registerLazySingleton<CartRepository>(
       () => CartRepository(getIt<LocalStorage>()));
+  getIt.registerLazySingleton<OrderRepository>(
+      () => OrderRepository(getIt<DioClient>()));
 
   // Blocs
   getIt.registerFactory<CategoryBloc>(
@@ -50,6 +54,8 @@ Future<void> setupDependencies() async {
       () => ProductDetailBloc(getIt<ProductRepository>()));
   getIt.registerFactory<HomeBloc>(() => HomeBloc(getIt<HomeRepository>()));
   getIt.registerLazySingleton<CartBloc>(() => CartBloc(getIt<CartRepository>()));
+  getIt.registerFactory<CheckoutBloc>(
+      () => CheckoutBloc(getIt<OrderRepository>(), getIt<CartBloc>()));
 
   getIt.registerLazySingleton<GoRouter>(() => buildRouter());
 }
