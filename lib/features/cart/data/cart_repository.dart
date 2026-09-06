@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:freshbox_app/core/constants/app_constants.dart';
 import 'package:freshbox_app/core/storage/local_storage.dart';
 import 'package:freshbox_app/features/cart/domain/cart.dart';
@@ -25,7 +27,7 @@ class CartRepository {
     }
 
     try {
-      return Cart.fromJson(jsonString as Map<String, dynamic>);
+      return Cart.fromJson(jsonDecode(jsonString) as Map<String, dynamic>);
     } catch (_) {
       return Cart.empty();
     }
@@ -34,7 +36,7 @@ class CartRepository {
   Future<void> saveCart(Cart cart) async {
     final companyId = await _getCompanyId();
     final cartKey = _getCartKey(companyId);
-    await _localStorage.setString(cartKey, cart.toJson().toString());
+    await _localStorage.setString(cartKey, jsonEncode(cart.toJson()));
   }
 
   Future<void> clearCart() async {

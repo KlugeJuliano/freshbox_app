@@ -6,7 +6,7 @@ part 'auth_tokens.g.dart';
 @freezed
 abstract class AuthTokens with _$AuthTokens {
   const factory AuthTokens({
-    required String accessToken,
+    @JsonKey(name: 'token') required String accessToken,
   }) = _AuthTokens;
 
   factory AuthTokens.fromJson(Map<String, dynamic> json) => _$AuthTokensFromJson(json);

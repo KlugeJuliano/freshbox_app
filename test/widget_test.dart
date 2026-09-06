@@ -14,6 +14,10 @@ import 'package:freshbox_app/app/app.dart';
 import 'package:freshbox_app/app/router.dart';
 import 'package:freshbox_app/core/network/dio_client.dart';
 import 'package:freshbox_app/core/network/paginated.dart';
+import 'package:freshbox_app/features/auth/data/auth_repository.dart';
+import 'package:freshbox_app/features/auth/presentation/auth_bloc.dart';
+import 'package:freshbox_app/features/auth/presentation/auth_state.dart';
+import 'package:freshbox_app/features/auth/domain/user.dart';
 import 'package:freshbox_app/features/cart/data/cart_repository.dart';
 import 'package:freshbox_app/features/cart/presentation/cart_bloc.dart';
 import 'package:freshbox_app/features/cart/domain/cart.dart';
@@ -35,12 +39,16 @@ class _MockCategoryRepository extends Mock implements CategoryRepository {}
 class _MockProductRepository extends Mock implements ProductRepository {}
 class _MockHomeRepository extends Mock implements HomeRepository {}
 class _MockCartRepository extends Mock implements CartRepository {}
+class _MockAuthRepository extends Mock implements AuthRepository {}
+class _MockAuthBloc extends Mock implements AuthBloc {}
 
 void main() {
   late GetIt getIt;
   late SharedPreferences prefs;
   late _MockHomeRepository mockHomeRepository;
   late _MockCartRepository mockCartRepository;
+  late _MockAuthRepository mockAuthRepository;
+  late _MockAuthBloc mockAuthBloc;
 
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
@@ -49,6 +57,8 @@ void main() {
 
     mockHomeRepository = _MockHomeRepository();
     mockCartRepository = _MockCartRepository();
+    mockAuthRepository = _MockAuthRepository();
+    mockAuthBloc = _MockAuthBloc();
     
     // Mock HomeRepository responses
     when(() => mockHomeRepository.getStore()).thenAnswer((_) async => Store(
@@ -77,6 +87,17 @@ void main() {
     
     // Mock CartRepository responses
     when(() => mockCartRepository.getCart()).thenAnswer((_) async => Cart.empty());
+    
+    // Mock AuthRepository and AuthBloc for unauthenticated state
+    when(() => mockAuthBloc.state).thenReturn(const AuthState.unauthenticated());
+    when(() => mockAuthBloc.stream).thenAnswer((_) => Stream.value(const AuthState.unauthenticated()));
+    when(() => mockAuthRepository.me()).thenAnswer((_) async => User(
+      id: 1,
+      name: 'Admin',
+      email: 'admin@test.com',
+      role: 'admin',
+      companyId: 1,
+    ));
 
     getIt = GetIt.instance;
     getIt.registerSingleton<SharedPreferences>(prefs);
@@ -85,12 +106,14 @@ void main() {
     getIt.registerSingleton<ProductRepository>(_MockProductRepository());
     getIt.registerSingleton<HomeRepository>(mockHomeRepository);
     getIt.registerSingleton<CartRepository>(mockCartRepository);
+    getIt.registerSingleton<AuthRepository>(mockAuthRepository);
     getIt.registerLazySingleton<GoRouter>(() => buildRouter());
     getIt.registerFactory<CategoryBloc>(() => CategoryBloc(getIt<CategoryRepository>()));
     getIt.registerFactory<ProductListBloc>(() => ProductListBloc(getIt<ProductRepository>()));
     getIt.registerFactory<ProductDetailBloc>(() => ProductDetailBloc(getIt<ProductRepository>()));
     getIt.registerFactory<HomeBloc>(() => HomeBloc(getIt<HomeRepository>()));
     getIt.registerLazySingleton<CartBloc>(() => CartBloc(getIt<CartRepository>()));
+    getIt.registerLazySingleton<AuthBloc>(() => mockAuthBloc);
   });
 
   tearDownAll(() {

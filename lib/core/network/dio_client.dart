@@ -4,7 +4,7 @@ import 'api_exception.dart';
 
 class DioClient {
   Dio _dio;
-  String Function()? _tokenProvider;
+  Future<String?> Function()? _tokenProvider;
 
   DioClient(this._dio) {
     _dio = Dio(
@@ -26,7 +26,7 @@ class DioClient {
     ));
   }
 
-  void setTokenProvider(String Function()? provider) {
+  void setTokenProvider(Future<String?> Function()? provider) {
     _tokenProvider = provider;
     if (provider != null) {
       _addAuthInterceptor();
@@ -36,7 +36,7 @@ class DioClient {
   void _addAuthInterceptor() {
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
-        final token = _tokenProvider?.call();
+        final token = await _tokenProvider?.call();
         if (token != null && token.isNotEmpty) {
           options.headers['Authorization'] = 'Bearer $token';
         }
@@ -178,7 +178,7 @@ class DioClient {
 
   // Método legacy - mantido para compatibilidade, mas delega ao provider
   void setToken(String token) {
-    _tokenProvider = () => token;
+    _tokenProvider = () async => token;
     _addAuthInterceptor();
   }
 

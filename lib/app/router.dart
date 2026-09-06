@@ -3,6 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/di/injection.dart';
+import '../core/router/go_router_refresh_stream.dart';
+import '../features/auth/presentation/auth_bloc.dart';
+import '../features/auth/presentation/auth_state.dart';
+import '../features/auth/presentation/login_page.dart';
 import '../features/category/presentation/categories_page.dart';
 import '../features/home/presentation/home_bloc.dart';
 import '../features/home/presentation/home_event.dart';
@@ -22,9 +26,24 @@ import '../features/checkout/presentation/checkout_page.dart';
 
 // Provider para o roteador (facilita acesso e testes)
 GoRouter buildRouter() {
+  final authBloc = getIt<AuthBloc>();
   return GoRouter(
     initialLocation: '/',
     debugLogDiagnostics: true,
+    refreshListenable: GoRouterRefreshStream(authBloc.stream),
+    redirect: (context, state) {
+      final authState = authBloc.state;
+      final isChecking = authState.maybeWhen(checking: () => true, orElse: () => false);
+      if (isChecking) return null; // splash decide, router não interfere ainda
+      final isAuth = authState.maybeWhen(authenticated: (_) => true, orElse: () => false);
+      final goingToLogin = state.uri.path == '/login';
+
+      if (!isAuth && state.uri.path.startsWith('/admin')) {
+        return '/login?redirect=${Uri.encodeComponent(state.uri.toString())}';
+      }
+      if (isAuth && goingToLogin) return '/admin';
+      return null;
+    },
     routes: [
       // ─── CLIENT ROUTES ──────────────────────────────────────────
       GoRoute(
@@ -129,8 +148,10 @@ GoRoute(
       GoRoute(
         path: '/login',
         name: 'login',
-        builder: (context, state) =>
-            const Scaffold(body: Center(child: Text('Login Admin'))),
+        builder: (context, state) => BlocProvider.value(
+          value: getIt<AuthBloc>(),
+          child: const LoginPage(),
+        ),
       ),
 
       // ─── ADMIN ROUTES ──────────────────────────────────────────
