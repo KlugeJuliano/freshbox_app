@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:freshbox_app/core/di/injection.dart';
 import 'package:freshbox_app/core/utils/currency_formatter.dart';
 import 'package:freshbox_app/features/cart/domain/cart_item.dart';
 import 'package:freshbox_app/features/cart/presentation/cart_bloc.dart';
@@ -45,6 +45,7 @@ class ProductCard extends StatelessWidget {
                     bottom: 8,
                     right: 8,
                     child: FloatingActionButton.small(
+                      heroTag: 'add-to-cart-${product.slug}',
                       onPressed: () => _addToCart(context),
                       backgroundColor: theme.colorScheme.primary,
                       foregroundColor: Colors.white,
@@ -64,7 +65,7 @@ class ProductCard extends StatelessWidget {
 
   void _addToCart(BuildContext context) {
     final cartItem = CartItem.fromProduct(product);
-    context.read<CartBloc>().add(CartEvent.addItem(cartItem));
+    getIt<CartBloc>().add(CartEvent.addItem(cartItem));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('${product.name} adicionado ao carrinho'),

@@ -15,11 +15,24 @@ abstract class Paginated<T> with _$Paginated<T> {
     Map<String, dynamic> json,
     T Function(Object? json) fromJsonT,
   ) {
-    final meta = json['meta'] as Map<String, dynamic>;
+    final dataList = json['data'] as List;
+    final items = dataList
+        .map((e) => fromJsonT(e as Map<String, dynamic>))
+        .toList();
+
+    final meta = json['meta'] as Map<String, dynamic>?;
+    if (meta == null) {
+      // Endpoint não paginado (ex: /products/featured) — trata como página única
+      return Paginated<T>(
+        data: items,
+        currentPage: 1,
+        lastPage: 1,
+        total: items.length,
+      );
+    }
+
     return Paginated<T>(
-      data: (json['data'] as List)
-          .map((e) => fromJsonT(e as Map<String, dynamic>))
-          .toList(),
+      data: items,
       currentPage: meta['current_page'] as int,
       lastPage: meta['last_page'] as int,
       total: meta['total'] as int,

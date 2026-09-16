@@ -201,7 +201,7 @@ class _LoadedView extends StatelessWidget {
                 onPressed: product.isAvailable
                     ? () {
                         final cartItem = CartItem.fromProduct(product);
-                        context.read<CartBloc>().add(CartEvent.addItem(cartItem));
+                        getIt<CartBloc>().add(CartEvent.addItem(cartItem));
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text('${product.name} adicionado ao carrinho'),

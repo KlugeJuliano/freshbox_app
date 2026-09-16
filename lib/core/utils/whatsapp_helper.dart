@@ -1,7 +1,7 @@
-import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:freshbox_app/features/order/domain/order.dart';
+import 'package:freshbox_app/core/utils/currency_formatter.dart';
 
 class WhatsAppNotAvailableException implements Exception {
   final String whatsappUrl;
@@ -52,16 +52,5 @@ class WhatsAppHelper {
     buffer.writeln('Obrigado pela preferência! 🌱');
 
     return buffer.toString();
-  }
-}
-
-extension _CurrencyFormat on double {
-  String get formatted {
-    final formatter = NumberFormat.currency(
-      locale: 'pt_BR',
-      symbol: 'R\$ ',
-      decimalDigits: 2,
-    );
-    return formatter.format(this);
   }
 }
