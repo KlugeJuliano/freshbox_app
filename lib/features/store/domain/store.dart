@@ -12,10 +12,14 @@ abstract class Store with _$Store {
     @JsonKey(name: 'logo_url') String? logoUrl,
     String? whatsapp,
     @JsonKey(name: 'open_now') required bool isOpen,
-    @JsonKey(name: 'delivery_fee') required double deliveryFee,
+    @JsonKey(name: 'delivery_fee') required num deliveryFeeRaw,
 
     //String? address, ->será implementado em outro momento
   }) = _Store;
 
   factory Store.fromJson(Map<String, dynamic> json) => _$StoreFromJson(json);
+}
+
+extension StoreExtensions on Store {
+  double get deliveryFee => deliveryFeeRaw.toDouble();
 }

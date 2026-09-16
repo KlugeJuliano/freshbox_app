@@ -68,7 +68,7 @@ void main() {
       logoUrl: null,
       whatsapp: null,
       isOpen: true,
-      deliveryFee: 5.0,
+      deliveryFeeRaw: 5.0,
     ));
     when(() => mockHomeRepository.getBanners()).thenAnswer((_) async => <String>[]);
     when(() => mockHomeRepository.getCategories()).thenAnswer((_) async => <Category>[]);

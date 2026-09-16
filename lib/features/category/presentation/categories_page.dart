@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:freshbox_app/core/di/injection.dart';
 import '../../../../shared/widgets/cached_image.dart';
 import '../../../../shared/widgets/error_retry_widget.dart';
 import '../domain/category.dart';
@@ -15,7 +16,7 @@ class CategoriesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => CategoryBloc(context.read())
+      create: (context) => getIt<CategoryBloc>()
         ..add(const CategoryEvent.loadCategories()),
       child: const _CategoriesView(),
     );
