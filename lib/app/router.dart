@@ -23,6 +23,12 @@ import '../features/cart/presentation/cart_event.dart';
 import '../features/cart/presentation/cart_page.dart';
 import '../features/checkout/presentation/checkout_bloc.dart';
 import '../features/checkout/presentation/checkout_page.dart';
+import '../features/admin/presentation/admin_dashboard_page.dart';
+import '../features/admin/presentation/admin_categories_page.dart';
+import '../features/admin/presentation/admin_products_page.dart';
+import '../features/admin/presentation/admin_banners_page.dart';
+import '../features/admin/presentation/admin_orders_page.dart';
+import '../features/admin/presentation/admin_settings_page.dart';
 
 // Provider para o roteador (facilita acesso e testes)
 GoRouter buildRouter() {
@@ -128,17 +134,17 @@ GoRouter buildRouter() {
               child: const CartPage(),
             ),
             routes: [
-GoRoute(
-            path: 'checkout',
-            name: 'checkout',
-            builder: (context, state) => MultiBlocProvider(
-              providers: [
-                BlocProvider.value(value: getIt<CartBloc>()),
-                BlocProvider(create: (_) => getIt<CheckoutBloc>()),
-              ],
-              child: const CheckoutPage(),
-            ),
-          ),
+              GoRoute(
+                path: 'checkout',
+                name: 'checkout',
+                builder: (context, state) => MultiBlocProvider(
+                  providers: [
+                    BlocProvider.value(value: getIt<CartBloc>()),
+                    BlocProvider(create: (_) => getIt<CheckoutBloc>()),
+                  ],
+                  child: const CheckoutPage(),
+                ),
+              ),
             ],
           ),
         ],
@@ -155,87 +161,49 @@ GoRoute(
       ),
 
       // ─── ADMIN ROUTES ──────────────────────────────────────────
-      // Usaremos ShellRoute futuramente para um menu lateral/bottom bar fixo no admin
-      GoRoute(
-        path: '/admin',
-        name: 'admin_dashboard',
-        builder: (context, state) =>
-            const Scaffold(body: Center(child: Text('Admin Dashboard'))),
+      // Usamos ShellRoute para manter o AdminLayout (sidebar) persistente
+      ShellRoute(
+        builder: (context, state, child) => child,
         routes: [
           GoRoute(
-            path: 'categories',
+            path: '/admin',
+            name: 'admin_dashboard',
+            builder: (context, state) => const AdminDashboardPage(),
+          ),
+          GoRoute(
+            path: '/admin/categories',
             name: 'admin_categories',
-            builder: (context, state) => const Scaffold(
-                body: Center(child: Text('Gestão de Categorias'))),
-            routes: [
-              GoRoute(
-                path: 'create',
-                name: 'admin_category_create',
-                builder: (context, state) =>
-                    const Scaffold(body: Center(child: Text('Nova Categoria'))),
-              ),
-              GoRoute(
-                path: ':id',
-                name: 'admin_category_edit',
-                builder: (context, state) {
-                  final id = state.pathParameters['id']!;
-                  return Scaffold(
-                      body: Center(child: Text('Editar Categoria ID: $id')));
-                },
-              ),
-            ],
+            builder: (context, state) => const AdminCategoriesPage(),
           ),
           GoRoute(
-            path: 'products',
+            path: '/admin/products',
             name: 'admin_products',
-            builder: (context, state) =>
-                const Scaffold(body: Center(child: Text('Gestão de Produtos'))),
-            routes: [
-              GoRoute(
-                path: 'create',
-                name: 'admin_product_create',
-                builder: (context, state) =>
-                    const Scaffold(body: Center(child: Text('Novo Produto'))),
-              ),
-              GoRoute(
-                path: ':id',
-                name: 'admin_product_edit',
-                builder: (context, state) {
-                  final id = state.pathParameters['id']!;
-                  return Scaffold(
-                      body: Center(child: Text('Editar Produto ID: $id')));
-                },
-              ),
-            ],
+            builder: (context, state) => const AdminProductsPage(),
           ),
           GoRoute(
-            path: 'banners',
+            path: '/admin/banners',
             name: 'admin_banners',
-            builder: (context, state) =>
-                const Scaffold(body: Center(child: Text('Gestão de Banners'))),
+            builder: (context, state) => const AdminBannersPage(),
           ),
           GoRoute(
-            path: 'orders',
+            path: '/admin/orders',
             name: 'admin_orders',
-            builder: (context, state) =>
-                const Scaffold(body: Center(child: Text('Gestão de Pedidos'))),
-            routes: [
-              GoRoute(
-                path: ':id',
-                name: 'admin_order_detail',
-                builder: (context, state) {
-                  final id = state.pathParameters['id']!;
-                  return Scaffold(
-                      body: Center(child: Text('Detalhe do Pedido ID: $id')));
-                },
-              ),
-            ],
+            builder: (context, state) => const AdminOrdersPage(),
           ),
           GoRoute(
-            path: 'settings',
+            path: '/admin/orders/:id',
+            name: 'admin_order_detail',
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return Scaffold(
+                body: Center(child: Text('Detalhe do Pedido ID: $id')),
+              );
+            },
+          ),
+          GoRoute(
+            path: '/admin/settings',
             name: 'admin_settings',
-            builder: (context, state) => const Scaffold(
-                body: Center(child: Text('Configurações da Loja'))),
+            builder: (context, state) => const AdminSettingsPage(),
           ),
         ],
       ),
