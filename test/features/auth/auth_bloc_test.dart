@@ -219,5 +219,130 @@ void main() {
         ],
       );
     });
+
+    group('Admin Login', () {
+      const adminEmail = 'admin@freshbox.com';
+      const adminPassword = 'admin123';
+
+      blocTest<AuthBloc, AuthState>(
+        'emits [loading, authenticated] with admin role on successful admin login',
+        build: () {
+          when(() => mockAuthRepository.login(any())).thenAnswer((_) async => AuthTokens(
+            accessToken: 'admin-token',
+          ));
+          when(() => mockLocalDataSource.saveTokens(any(), rememberMe: true)).thenAnswer((_) async {});
+          when(() => mockAuthRepository.parseLoginUser(any())).thenReturn(User(
+            id: 1,
+            name: 'Admin User',
+            email: adminEmail,
+            role: 'admin',
+            companyId: 1,
+          ));
+          return authBloc;
+        },
+        act: (bloc) => bloc.add(AuthEvent.login(
+          email: adminEmail,
+          password: adminPassword,
+          rememberMe: true,
+        )),
+        expect: () => [
+          const AuthState.loading(),
+          predicate<AuthState>((s) => s.maybeWhen(
+            authenticated: (user) => user.role == 'admin',
+            orElse: () => false,
+          )),
+        ],
+        verify: (_) {
+          verify(() => mockAuthRepository.login(any())).called(1);
+          verify(() => mockLocalDataSource.saveTokens(any(), rememberMe: true)).called(1);
+        },
+      );
+
+      blocTest<AuthBloc, AuthState>(
+        'emits [loading, error] on 401 invalid credentials',
+        build: () {
+          when(() => mockAuthRepository.login(any())).thenThrow(
+            DioException(
+              requestOptions: RequestOptions(path: '/auth/login'),
+              response: Response(
+                requestOptions: RequestOptions(path: '/auth/login'),
+                statusCode: 401,
+                data: {'message': 'Credenciais inválidas'},
+              ),
+              type: DioExceptionType.badResponse,
+            ),
+          );
+          return authBloc;
+        },
+        act: (bloc) => bloc.add(AuthEvent.login(
+          email: adminEmail,
+          password: 'wrong-password',
+          rememberMe: false,
+        )),
+        expect: () => [
+          const AuthState.loading(),
+          predicate<AuthState>((s) => s.maybeWhen(
+            error: (msg) => msg == 'Sessão expirada. Faça login novamente.',
+            orElse: () => false,
+          )),
+        ],
+      );
+
+      blocTest<AuthBloc, AuthState>(
+        'emits [loading, error] on 403 forbidden (non-admin trying admin)',
+        build: () {
+          when(() => mockAuthRepository.login(any())).thenThrow(
+            DioException(
+              requestOptions: RequestOptions(path: '/auth/login'),
+              response: Response(
+                requestOptions: RequestOptions(path: '/auth/login'),
+                statusCode: 403,
+                data: {'message': 'Acesso negado. Apenas administradores.'},
+              ),
+              type: DioExceptionType.badResponse,
+            ),
+          );
+          return authBloc;
+        },
+        act: (bloc) => bloc.add(AuthEvent.login(
+          email: 'client@test.com',
+          password: 'client123',
+          rememberMe: false,
+        )),
+        expect: () => [
+          const AuthState.loading(),
+          predicate<AuthState>((s) => s.maybeWhen(
+            error: (msg) => msg == 'Sessão expirada. Faça login novamente.',
+            orElse: () => false,
+          )),
+        ],
+      );
+    });
+
+    group('Token Expiry Handling', () {
+      blocTest<AuthBloc, AuthState>(
+        'emits unauthenticated when token expires during checkAuthStatus',
+        build: () {
+          when(() => mockLocalDataSource.getToken()).thenAnswer((_) async => 'expired-token');
+          when(() => mockAuthRepository.me()).thenThrow(
+            DioException(
+              requestOptions: RequestOptions(path: '/auth/me'),
+              response: Response(
+                requestOptions: RequestOptions(path: '/auth/me'),
+                statusCode: 401,
+                data: {'message': 'Token expirado'},
+              ),
+              type: DioExceptionType.badResponse,
+            ),
+          );
+          return authBloc;
+        },
+        act: (bloc) => bloc.add(const AuthEvent.checkAuthStatus()),
+        expect: () => [
+          const AuthState.checking(),
+          const AuthState.unauthenticated(),
+        ],
+      );
+    });
   });
 }
