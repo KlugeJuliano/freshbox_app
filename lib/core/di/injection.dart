@@ -21,6 +21,12 @@ import '../../features/auth/data/auth_local_datasource.dart';
 import '../../features/auth/data/auth_repository.dart';
 import '../../features/auth/presentation/auth_bloc.dart';
 import '../../features/auth/presentation/auth_event.dart';
+import '../../features/admin/data/admin_category_repository.dart';
+import '../../features/admin/data/admin_product_repository.dart';
+import '../../features/admin/presentation/blocs/admin_category_list_bloc.dart';
+import '../../features/admin/presentation/blocs/admin_category_form_bloc.dart';
+import '../../features/admin/presentation/blocs/admin_product_list_bloc.dart';
+import '../../features/admin/presentation/blocs/admin_product_form_bloc.dart';
 
 import 'package:go_router/go_router.dart';
 import '../../app/router.dart';
@@ -54,6 +60,10 @@ Future<void> setupDependencies() async {
       () => AuthLocalDataSource(getIt<FlutterSecureStorage>()));
   getIt.registerLazySingleton<AuthRepository>(
       () => AuthRepository(getIt<DioClient>()));
+  getIt.registerLazySingleton<AdminCategoryRepository>(
+      () => AdminCategoryRepository(getIt<DioClient>()));
+  getIt.registerLazySingleton<AdminProductRepository>(
+      () => AdminProductRepository(getIt<DioClient>()));
 
   // Blocs
   getIt.registerFactory<CategoryBloc>(
@@ -69,6 +79,14 @@ Future<void> setupDependencies() async {
   getIt.registerLazySingleton<AuthBloc>(
       () => AuthBloc(getIt<AuthRepository>(), getIt<AuthLocalDataSource>())
         ..add(const AuthEvent.checkAuthStatus()));
+  getIt.registerFactory<AdminCategoryListBloc>(
+      () => AdminCategoryListBloc(getIt<AdminCategoryRepository>()));
+  getIt.registerFactory<AdminCategoryFormBloc>(
+      () => AdminCategoryFormBloc(getIt<AdminCategoryRepository>()));
+  getIt.registerFactory<AdminProductListBloc>(
+      () => AdminProductListBloc(getIt<AdminProductRepository>()));
+  getIt.registerFactory<AdminProductFormBloc>(
+      () => AdminProductFormBloc(getIt<AdminProductRepository>()));
 
   // Configurar token provider no DioClient
   getIt<DioClient>().setTokenProvider(() => getIt<AuthLocalDataSource>().getToken());
