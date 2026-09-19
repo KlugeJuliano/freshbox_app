@@ -46,8 +46,17 @@ class _CategoriesView extends StatefulWidget {
 
 class _CategoriesViewState extends State<_CategoriesView> {
   String _generateSlug(String name) {
-    return name
+    // Normalize accents first (NFD decomposition + remove combining marks)
+    final normalized = name
         .toLowerCase()
+        .replaceAll(RegExp(r'[áàâãä]'), 'a')
+        .replaceAll(RegExp(r'[éèêë]'), 'e')
+        .replaceAll(RegExp(r'[íìîï]'), 'i')
+        .replaceAll(RegExp(r'[óòôõö]'), 'o')
+        .replaceAll(RegExp(r'[úùûü]'), 'u')
+        .replaceAll(RegExp(r'[ç]'), 'c')
+        .replaceAll(RegExp(r'[ñ]'), 'n');
+    return normalized
         .replaceAll(RegExp(r'[^a-z0-9\s-]'), '')
         .replaceAll(RegExp(r'\s+'), '-')
         .replaceAll(RegExp(r'-+'), '-')
