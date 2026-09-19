@@ -4,5 +4,7 @@ targets:
       - lib/features/**/domain/*.dart
       - lib/features/**/presentation/*_event.dart
       - lib/features/**/presentation/*_state.dart
+      - lib/features/**/presentation/blocs/*_event.dart
+      - lib/features/**/presentation/blocs/*_state.dart
       - lib/core/network/paginated.dart
       - lib/app/router.dart

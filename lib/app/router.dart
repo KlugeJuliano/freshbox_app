@@ -174,6 +174,21 @@ GoRouter buildRouter() {
             path: '/admin/categories',
             name: 'admin_categories',
             builder: (context, state) => const AdminCategoriesPage(),
+            routes: [
+              GoRoute(
+                path: 'create',
+                name: 'admin_category_create',
+                builder: (context, state) => const AdminCategoriesPage(),
+              ),
+              GoRoute(
+                path: ':id/edit',
+                name: 'admin_category_edit',
+                builder: (context, state) {
+                  final id = state.pathParameters['id']!;
+                  return AdminCategoriesPage(categoryIdToEdit: int.parse(id));
+                },
+              ),
+            ],
           ),
           GoRoute(
             path: '/admin/products',
