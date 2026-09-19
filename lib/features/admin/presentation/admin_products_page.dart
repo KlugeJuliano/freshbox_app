@@ -49,14 +49,42 @@ class _ProductsView extends StatefulWidget {
 }
 
 class _ProductsViewState extends State<_ProductsView> {
+  List<Category> _categories = [];
+  bool _categoriesLoading = true;
+
   @override
   void initState() {
     super.initState();
+    _loadCategories();
     if (widget.productIdToEdit != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _showEditDialog(context.read<AdminProductFormBloc>(), widget.productIdToEdit!);
       });
     }
+  }
+
+  Future<void> _loadCategories() async {
+    try {
+      final categories = await getIt<AdminCategoryRepository>().getAll();
+      if (mounted) {
+        setState(() {
+          _categories = categories;
+          _categoriesLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _categoriesLoading = false);
+      }
+    }
+  }
+
+  String _getCategoryName(int categoryId) {
+    final category = _categories.firstWhere(
+      (c) => c.id == categoryId,
+      orElse: () => Category(id: categoryId, name: 'Desconhecida', slug: '', sortOrder: 0, isActive: false, productsCount: 0),
+    );
+    return category.name;
   }
 
   @override
@@ -140,7 +168,12 @@ class _ProductsViewState extends State<_ProductsView> {
                     ),
                   ),
                 )
-              : SingleChildScrollView(
+              : _categoriesLoading
+                  ? const Padding(
+                      padding: EdgeInsets.all(48),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  : SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: DataTable(
                     headingRowColor: WidgetStatePropertyAll(Colors.grey.shade50),
@@ -158,7 +191,6 @@ class _ProductsViewState extends State<_ProductsView> {
                       DataColumn(label: Text('Categoria')),
                       DataColumn(label: Text('Disponível')),
                       DataColumn(label: Text('Destaque')),
-                      DataColumn(label: Text('Promo')),
                       DataColumn(label: Text('Status')),
                       DataColumn(label: Text('Ações'), numeric: true),
                     ],
@@ -185,7 +217,7 @@ class _ProductsViewState extends State<_ProductsView> {
                                 : const Text('-'),
                           ),
                           DataCell(Text(product.unitLabel)),
-                          DataCell(Text(product.categoryId.toString())), // Category name would need join
+                          DataCell(Text(_getCategoryName(product.categoryId))),
                           DataCell(_buildStatusChip(product.isAvailable)),
                           DataCell(_buildStatusChip(product.isFeatured)),
                           DataCell(_buildStatusChip(product.isOnPromo)),
@@ -431,7 +463,7 @@ Expanded(
                                         decoration: const InputDecoration(
                                           labelText: 'Categoria *',
                                         ),
-                                        items: categories.map((c) {
+                                        items: _categories.map((c) {
                                           return DropdownMenuItem<int>(
                                             value: c.id,
                                             child: Text(c.name),
@@ -786,7 +818,7 @@ Expanded(
                                         decoration: const InputDecoration(
                                           labelText: 'Categoria *',
                                         ),
-                                        items: categories.map((c) {
+                                        items: _categories.map((c) {
                                           return DropdownMenuItem<int>(
                                             value: c.id,
                                             child: Text(c.name),
