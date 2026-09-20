@@ -49,14 +49,42 @@ class _ProductsView extends StatefulWidget {
 }
 
 class _ProductsViewState extends State<_ProductsView> {
+  List<Category> _categories = [];
+  bool _categoriesLoading = true;
+
   @override
   void initState() {
     super.initState();
+    _loadCategories();
     if (widget.productIdToEdit != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _showEditDialog(context.read<AdminProductFormBloc>(), widget.productIdToEdit!);
       });
     }
+  }
+
+  Future<void> _loadCategories() async {
+    try {
+      final categories = await getIt<AdminCategoryRepository>().getAll();
+      if (mounted) {
+        setState(() {
+          _categories = categories;
+          _categoriesLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _categoriesLoading = false);
+      }
+    }
+  }
+
+  String _getCategoryName(int categoryId) {
+    final category = _categories.firstWhere(
+      (c) => c.id == categoryId,
+      orElse: () => Category(id: categoryId, name: 'Desconhecida', slug: '', sortOrder: 0, isActive: false, productsCount: 0),
+    );
+    return category.name;
   }
 
   @override
@@ -140,7 +168,12 @@ class _ProductsViewState extends State<_ProductsView> {
                     ),
                   ),
                 )
-              : SingleChildScrollView(
+              : _categoriesLoading
+                  ? const Padding(
+                      padding: EdgeInsets.all(48),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  : SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: DataTable(
                     headingRowColor: WidgetStatePropertyAll(Colors.grey.shade50),
@@ -158,7 +191,6 @@ class _ProductsViewState extends State<_ProductsView> {
                       DataColumn(label: Text('Categoria')),
                       DataColumn(label: Text('Disponível')),
                       DataColumn(label: Text('Destaque')),
-                      DataColumn(label: Text('Promo')),
                       DataColumn(label: Text('Status')),
                       DataColumn(label: Text('Ações'), numeric: true),
                     ],
@@ -185,7 +217,7 @@ class _ProductsViewState extends State<_ProductsView> {
                                 : const Text('-'),
                           ),
                           DataCell(Text(product.unitLabel)),
-                          DataCell(Text(product.categoryId.toString())), // Category name would need join
+                          DataCell(Text(_getCategoryName(product.categoryId))),
                           DataCell(_buildStatusChip(product.isAvailable)),
                           DataCell(_buildStatusChip(product.isFeatured)),
                           DataCell(_buildStatusChip(product.isOnPromo)),
@@ -410,7 +442,7 @@ class _ProductsViewState extends State<_ProductsView> {
                                   children: [
                                     Expanded(
                                       child: DropdownButtonFormField<ProductUnit>(
-                                        value: selectedUnit,
+                                        initialValue: selectedUnit,
                                         decoration: const InputDecoration(
                                           labelText: 'Unidade *',
                                         ),
@@ -425,13 +457,13 @@ class _ProductsViewState extends State<_ProductsView> {
                                       ),
                                     ),
                                     const SizedBox(width: 16),
-                                    Expanded(
+Expanded(
                                       child: DropdownButtonFormField<int>(
-                                        value: selectedCategoryId,
+                                        initialValue: selectedCategoryId,
                                         decoration: const InputDecoration(
                                           labelText: 'Categoria *',
                                         ),
-                                        items: categories.map((c) {
+                                        items: _categories.map((c) {
                                           return DropdownMenuItem<int>(
                                             value: c.id,
                                             child: Text(c.name),
@@ -445,37 +477,34 @@ class _ProductsViewState extends State<_ProductsView> {
                                 ),
                                 const SizedBox(height: 16),
                                 SwitchListTile(
-                                  title: const Text('Disponível'),
+                                  title: const Text('Dispon\u00edvel'),
                                   value: isAvailable,
                                   onChanged: (value) => setDialogState(() => isAvailable = value),
-                                  
-                                  
-                                  
+                                  contentPadding: EdgeInsets.zero,
                                 ),
                                 SwitchListTile(
                                   title: const Text('Destaque'),
                                   value: isFeatured,
                                   onChanged: (value) => setDialogState(() => isFeatured = value),
-
+                                  contentPadding: EdgeInsets.zero,
                                 ),
                                 SwitchListTile(
-                                  title: const Text('Em Promoção'),
+                                  title: const Text('Em Promo\u00e7\u00e3o'),
                                   value: isOnPromo,
                                   onChanged: (value) => setDialogState(() {
                                     isOnPromo = value;
                                     if (!value) {
                                       promoPriceController.clear();
                                       promoEndsAt = null;
-                                    } else if (promoPriceController.text.isEmpty) {
-                                      // Se marcou promo mas não tem preço, deixa o checkbox
                                     }
-                                  },
+                                  }),
+                                  contentPadding: EdgeInsets.zero,
                                 ),
                                 SwitchListTile(
                                   title: const Text('Ativo'),
                                   value: isActive,
                                   onChanged: (value) => setDialogState(() => isActive = value),
-                                  
+                                  contentPadding: EdgeInsets.zero,
                                 ),
                                 promoEndsAtField,
                                 const SizedBox(height: 16),
@@ -486,9 +515,10 @@ class _ProductsViewState extends State<_ProductsView> {
                                     hintText: 'https://exemplo.com/imagem.png',
                                   ),
                                 ),
-                              ],
+],
                             ),
                           ),
+                        ),
                         ),
                         actions: [
                         TextButton(
@@ -602,12 +632,14 @@ class _ProductsViewState extends State<_ProductsView> {
       isFeatured = product.isFeatured;
       isOnPromo = product.isOnPromo;
       isActive = product.isActive;
-      if (product.images.full.isNotEmpty) {
-        mainImageUrlController.text = product.images.full;
+      final fullImage = product.images.full;
+      if (fullImage != null && fullImage.isNotEmpty) {
+        mainImageUrlController.text = fullImage;
       }
       isLoading = false;
       if (mounted) setState(() {});
     }).catchError((e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erro ao carregar produto: $e'), backgroundColor: Colors.red),
       );
@@ -765,7 +797,7 @@ class _ProductsViewState extends State<_ProductsView> {
                                   children: [
                                     Expanded(
                                       child: DropdownButtonFormField<ProductUnit>(
-                                        value: selectedUnit,
+                                        initialValue: selectedUnit,
                                         decoration: const InputDecoration(
                                           labelText: 'Unidade *',
                                         ),
@@ -780,13 +812,13 @@ class _ProductsViewState extends State<_ProductsView> {
                                       ),
                                     ),
                                     const SizedBox(width: 16),
-                                    Expanded(
+Expanded(
                                       child: DropdownButtonFormField<int>(
-                                        value: selectedCategoryId,
+                                        initialValue: selectedCategoryId,
                                         decoration: const InputDecoration(
                                           labelText: 'Categoria *',
                                         ),
-                                        items: categories.map((c) {
+                                        items: _categories.map((c) {
                                           return DropdownMenuItem<int>(
                                             value: c.id,
                                             child: Text(c.name),
@@ -800,23 +832,19 @@ class _ProductsViewState extends State<_ProductsView> {
                                 ),
                                 const SizedBox(height: 16),
                                 SwitchListTile(
-                                  title: const Text('Disponível'),
+                                  title: const Text('Dispon\u00edvel'),
                                   value: isAvailable,
                                   onChanged: (value) => setDialogState(() => isAvailable = value),
-                                  
-                                  
-                                  
+                                  contentPadding: EdgeInsets.zero,
                                 ),
                                 SwitchListTile(
                                   title: const Text('Destaque'),
                                   value: isFeatured,
                                   onChanged: (value) => setDialogState(() => isFeatured = value),
-                                  
-                                  
-                                  
+                                  contentPadding: EdgeInsets.zero,
                                 ),
                                 SwitchListTile(
-                                  title: const Text('Em Promoção'),
+                                  title: const Text('Em Promo\u00e7\u00e3o'),
                                   value: isOnPromo,
                                   onChanged: (value) => setDialogState(() {
                                     isOnPromo = value;
@@ -824,14 +852,14 @@ class _ProductsViewState extends State<_ProductsView> {
                                       promoPriceController.clear();
                                       promoEndsAt = null;
                                     }
-                                  },
-                                  
+                                  }),
+                                  contentPadding: EdgeInsets.zero,
                                 ),
                                 SwitchListTile(
                                   title: const Text('Ativo'),
                                   value: isActive,
                                   onChanged: (value) => setDialogState(() => isActive = value),
-                                  
+                                  contentPadding: EdgeInsets.zero,
                                 ),
                                 promoEndsAtField,
                                 const SizedBox(height: 16),
@@ -842,11 +870,12 @@ class _ProductsViewState extends State<_ProductsView> {
                                     hintText: 'https://exemplo.com/imagem.png',
                                   ),
                                 ),
-                              ],
+],
                             ),
                           ),
                         ),
-                      actions: [
+                        ),
+                        actions: [
                         TextButton(
                           onPressed: state.maybeWhen(submitting: () => true, orElse: () => false)
                               ? null
