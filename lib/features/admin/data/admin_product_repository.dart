@@ -9,11 +9,20 @@ class AdminProductRepository {
   static const _endpoint = '/admin/products';
 
   Future<List<Product>> getAll() async {
-    final response = await _client.get(_endpoint);
-    final data = response.data['data'] as List;
-    return data
-        .map((e) => Product.fromJson(e as Map<String, dynamic>))
-        .toList();
+    final List<Product> all = [];
+    int page = 1;
+    bool hasNext = true;
+
+    while (hasNext) {
+      final response = await _client.get(_endpoint, queryParameters: {'page': page});
+      final data = response.data['data'] as List;
+      all.addAll(data.map((e) => Product.fromJson(e as Map<String, dynamic>)).toList());
+
+      final meta = response.data['meta'] as Map<String, dynamic>;
+      hasNext = (meta['current_page'] as int) < (meta['last_page'] as int);
+      page++;
+    }
+    return all;
   }
 
   Future<Product> getById(int id) async {

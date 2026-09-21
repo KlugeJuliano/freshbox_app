@@ -8,12 +8,12 @@ class AdminProductFormBloc
     extends Bloc<AdminProductFormEvent, AdminProductFormState> {
   AdminProductFormBloc(this._repository)
       : super(const AdminProductFormState.initial()) {
-    on<AdminProductFormEvent>((event, emit) {
-      event.when(
+    on<AdminProductFormEvent>((event, emit) async {
+      await event.when(
         create: (data) => _onCreate(data, emit),
         update: (id, data) => _onUpdate(id, data, emit),
         delete: (id) => _onDelete(id, emit),
-        reset: () => emit(const AdminProductFormState.initial()),
+        reset: () async => emit(const AdminProductFormState.initial()),
       );
     });
   }

@@ -9,11 +9,20 @@ class AdminCategoryRepository {
   static const _endpoint = '/admin/categories';
 
   Future<List<Category>> getAll() async {
-    final response = await _client.get(_endpoint);
-    final data = response.data['data'] as List;
-    return data
-        .map((e) => Category.fromJson(e as Map<String, dynamic>))
-        .toList();
+    final List<Category> all = [];
+    int page = 1;
+    bool hasNext = true;
+
+    while (hasNext) {
+      final response = await _client.get(_endpoint, queryParameters: {'page': page});
+      final data = response.data['data'] as List;
+      all.addAll(data.map((e) => Category.fromJson(e as Map<String, dynamic>)).toList());
+
+      final meta = response.data['meta'] as Map<String, dynamic>;
+      hasNext = (meta['current_page'] as int) < (meta['last_page'] as int);
+      page++;
+    }
+    return all;
   }
 
   Future<Category> getById(int id) async {
