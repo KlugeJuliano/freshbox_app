@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:freshbox_app/core/di/injection.dart';
+import 'package:freshbox_app/features/auth/presentation/auth_bloc.dart';
+import 'package:freshbox_app/features/auth/presentation/auth_event.dart';
 
 class AdminLayout extends StatelessWidget {
   const AdminLayout({required this.child, super.key});
@@ -205,7 +208,7 @@ class _Sidebar extends StatelessWidget {
           ),
           IconButton(
             icon: Icon(Icons.logout, size: 18, color: Colors.grey.shade600),
-            onPressed: () => context.go('/login'),
+            onPressed: () => getIt<AuthBloc>().add(const AuthEvent.logout()),
             tooltip: 'Sair',
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),

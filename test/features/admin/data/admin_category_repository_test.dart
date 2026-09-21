@@ -50,9 +50,20 @@ void main() {
 
   group('AdminCategoryRepository', () {
     group('getAll', () {
-      test('returns List<Category> on success', () async {
-        when(() => mockClient.get('/admin/categories')).thenAnswer((_) async => Response(
-              data: tCategoryListResponse,
+      test('returns List<Category> on success (single page)', () async {
+        const tPaginatedResponse = {
+          'data': [tCategoryJson],
+          'meta': {
+            'current_page': 1,
+            'last_page': 1,
+          },
+        };
+
+        when(() => mockClient.get(
+              '/admin/categories',
+              queryParameters: {'page': 1},
+            )).thenAnswer((_) async => Response(
+              data: tPaginatedResponse,
               statusCode: 200,
               requestOptions: RequestOptions(path: '/admin/categories'),
             ));
@@ -67,11 +78,80 @@ void main() {
         expect(result.first.sortOrder, 1);
         expect(result.first.isActive, true);
         expect(result.first.productsCount, 5);
-        verify(() => mockClient.get('/admin/categories')).called(1);
+        verify(() => mockClient.get(
+              '/admin/categories',
+              queryParameters: {'page': 1},
+            )).called(1);
+      });
+
+      test('returns List<Category> on success (multiple pages)', () async {
+        const tPage1Response = {
+          'data': [tCategoryJson],
+          'meta': {
+            'current_page': 1,
+            'last_page': 2,
+          },
+        };
+
+        const tPage2CategoryJson = {
+          'id': 2,
+          'parent_id': null,
+          'name': 'Verduras',
+          'slug': 'verduras',
+          'icon_url': null,
+          'image_url': null,
+          'sort_order': 2,
+          'is_active': true,
+          'products_count': 3,
+        };
+
+        const tPage2Response = {
+          'data': [tPage2CategoryJson],
+          'meta': {
+            'current_page': 2,
+            'last_page': 2,
+          },
+        };
+
+        when(() => mockClient.get(
+              '/admin/categories',
+              queryParameters: {'page': 1},
+            )).thenAnswer((_) async => Response(
+              data: tPage1Response,
+              statusCode: 200,
+              requestOptions: RequestOptions(path: '/admin/categories'),
+            ));
+
+        when(() => mockClient.get(
+              '/admin/categories',
+              queryParameters: {'page': 2},
+            )).thenAnswer((_) async => Response(
+              data: tPage2Response,
+              statusCode: 200,
+              requestOptions: RequestOptions(path: '/admin/categories'),
+            ));
+
+        final result = await repository.getAll();
+
+        expect(result, isA<List<Category>>());
+        expect(result.length, 2);
+        expect(result[0].name, 'Frutas');
+        expect(result[1].name, 'Verduras');
+        verify(() => mockClient.get(
+              '/admin/categories',
+              queryParameters: {'page': 1},
+            )).called(1);
+        verify(() => mockClient.get(
+              '/admin/categories',
+              queryParameters: {'page': 2},
+            )).called(1);
       });
 
       test('throws on Dio error', () async {
-        when(() => mockClient.get('/admin/categories')).thenThrow(Exception('Network error'));
+        when(() => mockClient.get(
+              '/admin/categories',
+              queryParameters: {'page': 1},
+            )).thenThrow(Exception('Network error'));
 
         expect(
           () => repository.getAll(),
@@ -80,8 +160,19 @@ void main() {
       });
 
       test('returns empty list when data is empty', () async {
-        when(() => mockClient.get('/admin/categories')).thenAnswer((_) async => Response(
-              data: {'data': []},
+        const tEmptyPaginatedResponse = {
+          'data': [],
+          'meta': {
+            'current_page': 1,
+            'last_page': 1,
+          },
+        };
+
+        when(() => mockClient.get(
+              '/admin/categories',
+              queryParameters: {'page': 1},
+            )).thenAnswer((_) async => Response(
+              data: tEmptyPaginatedResponse,
               statusCode: 200,
               requestOptions: RequestOptions(path: '/admin/categories'),
             ));

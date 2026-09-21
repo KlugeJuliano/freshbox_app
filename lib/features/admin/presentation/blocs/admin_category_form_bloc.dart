@@ -8,12 +8,12 @@ class AdminCategoryFormBloc
     extends Bloc<AdminCategoryFormEvent, AdminCategoryFormState> {
   AdminCategoryFormBloc(this._repository)
       : super(const AdminCategoryFormState.initial()) {
-    on<AdminCategoryFormEvent>((event, emit) {
-      event.when(
+    on<AdminCategoryFormEvent>((event, emit) async {
+      await event.when(
         create: (data) => _onCreate(data, emit),
         update: (id, data) => _onUpdate(id, data, emit),
         delete: (id) => _onDelete(id, emit),
-        reset: () => emit(const AdminCategoryFormState.initial()),
+        reset: () async => emit(const AdminCategoryFormState.initial()),
       );
     });
   }

@@ -637,7 +637,6 @@ Expanded(
         mainImageUrlController.text = fullImage;
       }
       isLoading = false;
-      if (mounted) setState(() {});
     }).catchError((e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -652,6 +651,44 @@ Expanded(
         value: formBloc,
         child: StatefulBuilder(
           builder: (context, setDialogState) {
+            // Carregar produto e categorias
+            Future.wait([
+              getIt<AdminProductRepository>().getById(id),
+              getIt<AdminCategoryRepository>().getAll(),
+            ]).then((results) {
+              final product = results[0] as Product;
+              final categories = results[1] as List<Category>;
+
+              nameController.text = product.name;
+              slugController.text = product.slug;
+              descriptionController.text = product.description ?? '';
+              priceController.text = product.price.toStringAsFixed(2).replaceAll('.', ',');
+              if (product.promoPrice != null) {
+                promoPriceController.text = product.promoPrice!.toStringAsFixed(2).replaceAll('.', ',');
+              }
+              if (product.promoEndsAt != null) {
+                promoEndsAt = product.promoEndsAt!;
+              }
+              selectedUnit = product.unit;
+              selectedCategoryId = product.categoryId;
+              isAvailable = product.isAvailable;
+              isFeatured = product.isFeatured;
+              isOnPromo = product.isOnPromo;
+              isActive = product.isActive;
+              final fullImage = product.images.full;
+              if (fullImage != null && fullImage.isNotEmpty) {
+                mainImageUrlController.text = fullImage;
+              }
+              isLoading = false;
+              setDialogState(() {});
+            }).catchError((e) {
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Erro ao carregar produto: $e'), backgroundColor: Colors.red),
+              );
+              Navigator.pop(context);
+            });
+
             return BlocConsumer<AdminProductFormBloc, AdminProductFormState>(
               listener: (context, state) {},
               builder: (context, state) {

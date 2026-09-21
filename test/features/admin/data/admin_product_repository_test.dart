@@ -63,9 +63,20 @@ void main() {
 
   group('AdminProductRepository', () {
     group('getAll', () {
-      test('returns List<Product> on success', () async {
-        when(() => mockClient.get('/admin/products')).thenAnswer((_) async => Response(
-              data: tProductListResponse,
+      test('returns List<Product> on success (single page)', () async {
+        const tPaginatedResponse = {
+          'data': [tProductJson],
+          'meta': {
+            'current_page': 1,
+            'last_page': 1,
+          },
+        };
+
+        when(() => mockClient.get(
+              '/admin/products',
+              queryParameters: {'page': 1},
+            )).thenAnswer((_) async => Response(
+              data: tPaginatedResponse,
               statusCode: 200,
               requestOptions: RequestOptions(path: '/admin/products'),
             ));
@@ -83,11 +94,86 @@ void main() {
         expect(result.first.isFeatured, true);
         expect(result.first.isActive, true);
         expect(result.first.categoryId, 1);
-        verify(() => mockClient.get('/admin/products')).called(1);
+        verify(() => mockClient.get(
+              '/admin/products',
+              queryParameters: {'page': 1},
+            )).called(1);
+      });
+
+      test('returns List<Product> on success (multiple pages)', () async {
+        const tPage1Response = {
+          'data': [tProductJson],
+          'meta': {
+            'current_page': 1,
+            'last_page': 2,
+          },
+        };
+
+        const tPage2ProductJson = {
+          'id': 2,
+          'name': 'Maçã Fuji',
+          'slug': 'maca-fuji',
+          'description': null,
+          'unit': 'kg',
+          'price': 8.99,
+          'promo_price': null,
+          'promo_ends_at': null,
+          'is_on_promo': false,
+          'effective_price': 8.99,
+          'images': {'thumb': null, 'card': null, 'full': null},
+          'is_available': true,
+          'is_featured': false,
+          'is_active': true,
+          'category_id': 1,
+        };
+
+        const tPage2Response = {
+          'data': [tPage2ProductJson],
+          'meta': {
+            'current_page': 2,
+            'last_page': 2,
+          },
+        };
+
+        when(() => mockClient.get(
+              '/admin/products',
+              queryParameters: {'page': 1},
+            )).thenAnswer((_) async => Response(
+              data: tPage1Response,
+              statusCode: 200,
+              requestOptions: RequestOptions(path: '/admin/products'),
+            ));
+
+        when(() => mockClient.get(
+              '/admin/products',
+              queryParameters: {'page': 2},
+            )).thenAnswer((_) async => Response(
+              data: tPage2Response,
+              statusCode: 200,
+              requestOptions: RequestOptions(path: '/admin/products'),
+            ));
+
+        final result = await repository.getAll();
+
+        expect(result, isA<List<Product>>());
+        expect(result.length, 2);
+        expect(result[0].name, 'Banana Nanica');
+        expect(result[1].name, 'Maçã Fuji');
+        verify(() => mockClient.get(
+              '/admin/products',
+              queryParameters: {'page': 1},
+            )).called(1);
+        verify(() => mockClient.get(
+              '/admin/products',
+              queryParameters: {'page': 2},
+            )).called(1);
       });
 
       test('throws on Dio error', () async {
-        when(() => mockClient.get('/admin/products')).thenThrow(Exception('Network error'));
+        when(() => mockClient.get(
+              '/admin/products',
+              queryParameters: {'page': 1},
+            )).thenThrow(Exception('Network error'));
 
         expect(
           () => repository.getAll(),
@@ -96,8 +182,19 @@ void main() {
       });
 
       test('returns empty list when data is empty', () async {
-        when(() => mockClient.get('/admin/products')).thenAnswer((_) async => Response(
-              data: {'data': []},
+        const tEmptyPaginatedResponse = {
+          'data': [],
+          'meta': {
+            'current_page': 1,
+            'last_page': 1,
+          },
+        };
+
+        when(() => mockClient.get(
+              '/admin/products',
+              queryParameters: {'page': 1},
+            )).thenAnswer((_) async => Response(
+              data: tEmptyPaginatedResponse,
               statusCode: 200,
               requestOptions: RequestOptions(path: '/admin/products'),
             ));
