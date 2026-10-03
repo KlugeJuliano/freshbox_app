@@ -65,10 +65,6 @@ class ProductListPage extends StatelessWidget {
       ProductListType.category => 'Produtos',
     };
   }
-
-  void _onRetry() {
-    // O Bloc já está no contexto, podemos acessar via context.read
-  }
 }
 
 class _LoadingView extends StatelessWidget {

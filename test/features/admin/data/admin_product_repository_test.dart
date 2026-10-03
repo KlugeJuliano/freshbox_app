@@ -2,7 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:freshbox_app/core/network/dio_client.dart';
 import 'package:freshbox_app/features/admin/data/admin_product_repository.dart';
 import 'package:freshbox_app/features/product/domain/product.dart';
-import 'package:freshbox_app/features/product/domain/product_image.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -33,10 +32,6 @@ void main() {
     'is_featured': true,
     'is_active': true,
     'category_id': 1,
-  };
-
-  const tProductListResponse = {
-    'data': [tProductJson],
   };
 
   const tProductDetailResponse = {'data': tProductJson};

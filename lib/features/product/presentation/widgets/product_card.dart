@@ -20,7 +20,6 @@ class ProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final hasPromo = product.hasPromo;
     final bool hasImage = product.images.card != null && product.images.card!.isNotEmpty;
 
     return Card(
@@ -158,7 +157,6 @@ class ProductCard extends StatelessWidget {
   }
 
   Widget _buildInfo(ThemeData theme) {
-    final hasPromo = product.hasPromo;
     return Padding(
       padding: const EdgeInsets.all(10),
       child: Column(

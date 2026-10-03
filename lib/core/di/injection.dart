@@ -23,10 +23,13 @@ import '../../features/auth/presentation/auth_bloc.dart';
 import '../../features/auth/presentation/auth_event.dart';
 import '../../features/admin/data/admin_category_repository.dart';
 import '../../features/admin/data/admin_product_repository.dart';
+import '../../features/admin/data/admin_order_repository.dart';
 import '../../features/admin/presentation/blocs/admin_category_list_bloc.dart';
 import '../../features/admin/presentation/blocs/admin_category_form_bloc.dart';
 import '../../features/admin/presentation/blocs/admin_product_list_bloc.dart';
 import '../../features/admin/presentation/blocs/admin_product_form_bloc.dart';
+import '../../features/admin/presentation/blocs/admin_order_list_bloc.dart';
+import '../../features/admin/presentation/blocs/admin_order_detail_bloc.dart';
 
 import 'package:go_router/go_router.dart';
 import '../../app/router.dart';
@@ -60,10 +63,12 @@ Future<void> setupDependencies() async {
       () => AuthLocalDataSource(getIt<FlutterSecureStorage>()));
   getIt.registerLazySingleton<AuthRepository>(
       () => AuthRepository(getIt<DioClient>()));
-  getIt.registerLazySingleton<AdminCategoryRepository>(
+getIt.registerLazySingleton<AdminCategoryRepository>(
       () => AdminCategoryRepository(getIt<DioClient>()));
-  getIt.registerLazySingleton<AdminProductRepository>(
-      () => AdminProductRepository(getIt<DioClient>()));
+getIt.registerLazySingleton<AdminProductRepository>(
+    () => AdminProductRepository(getIt<DioClient>()));
+getIt.registerLazySingleton<AdminOrderRepository>(
+    () => AdminOrderRepository(getIt<DioClient>()));
 
   // Blocs
   getIt.registerFactory<CategoryBloc>(
@@ -79,14 +84,18 @@ Future<void> setupDependencies() async {
   getIt.registerLazySingleton<AuthBloc>(
       () => AuthBloc(getIt<AuthRepository>(), getIt<AuthLocalDataSource>())
         ..add(const AuthEvent.checkAuthStatus()));
-  getIt.registerFactory<AdminCategoryListBloc>(
+getIt.registerFactory<AdminCategoryListBloc>(
       () => AdminCategoryListBloc(getIt<AdminCategoryRepository>()));
-  getIt.registerFactory<AdminCategoryFormBloc>(
-      () => AdminCategoryFormBloc(getIt<AdminCategoryRepository>()));
-  getIt.registerFactory<AdminProductListBloc>(
-      () => AdminProductListBloc(getIt<AdminProductRepository>()));
-  getIt.registerFactory<AdminProductFormBloc>(
-      () => AdminProductFormBloc(getIt<AdminProductRepository>()));
+getIt.registerFactory<AdminCategoryFormBloc>(
+    () => AdminCategoryFormBloc(getIt<AdminCategoryRepository>()));
+getIt.registerFactory<AdminProductListBloc>(
+    () => AdminProductListBloc(getIt<AdminProductRepository>()));
+getIt.registerFactory<AdminProductFormBloc>(
+    () => AdminProductFormBloc(getIt<AdminProductRepository>()));
+getIt.registerFactory<AdminOrderListBloc>(
+    () => AdminOrderListBloc(getIt<AdminOrderRepository>()));
+getIt.registerFactory<AdminOrderDetailBloc>(
+    () => AdminOrderDetailBloc(getIt<AdminOrderRepository>()));
 
   // Configurar token provider no DioClient
   getIt<DioClient>().setTokenProvider(() => getIt<AuthLocalDataSource>().getToken());
