@@ -28,10 +28,6 @@ void main() {
     'products_count': 5,
   };
 
-  const tCategoryListResponse = {
-    'data': [tCategoryJson],
-  };
-
   const tCategoryDetailResponse = {'data': tCategoryJson};
 
   const tCreatedCategoryJson = {

@@ -17,7 +17,7 @@ class _LoginFormState extends State<LoginForm> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _rememberMe = false;
-  bool _isLoading = false;
+  final _isLoading = false;
 
   @override
   void dispose() {

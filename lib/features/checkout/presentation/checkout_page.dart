@@ -260,7 +260,7 @@ class _CheckoutViewState extends State<_CheckoutView> {
   Widget _buildOrderSummary(BuildContext context) {
     return BlocBuilder<CartBloc, CartState>(
       builder: (context, cartState) {
-        final cart = cartState?.maybeMap(loaded: (state) => state.cart, orElse: () => null);
+        final cart = cartState.maybeMap(loaded: (state) => state.cart, orElse: () => null);
         if (cart == null || cart.isEmpty) return const SizedBox.shrink();
 
         return Card(

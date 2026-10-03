@@ -10,8 +10,6 @@ class StoreRepository {
   Future<Store> getStore() async {
     final response = await dioClient.get(ApiEndpoint.clientStore);
 
-    print(response.data['data']);
-
     return Store.fromJson(response.data['data']);
   }
 }

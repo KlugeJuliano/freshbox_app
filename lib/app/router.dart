@@ -29,6 +29,7 @@ import '../features/admin/presentation/admin_products_page.dart';
 import '../features/admin/presentation/admin_banners_page.dart';
 import '../features/admin/presentation/admin_orders_page.dart';
 import '../features/admin/presentation/admin_settings_page.dart';
+import '../features/admin/presentation/admin_order_detail_page.dart';
 
 // Provider para o roteador (facilita acesso e testes)
 GoRouter buildRouter() {
@@ -225,9 +226,7 @@ GoRouter buildRouter() {
             name: 'admin_order_detail',
             builder: (context, state) {
               final id = state.pathParameters['id']!;
-              return Scaffold(
-                body: Center(child: Text('Detalhe do Pedido ID: $id')),
-              );
+              return AdminOrderDetailPage(orderId: id);
             },
           ),
           GoRoute(

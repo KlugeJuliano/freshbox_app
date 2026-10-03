@@ -1,6 +1,5 @@
 import 'package:freshbox_app/core/network/api_endpoint.dart';
 import 'package:freshbox_app/core/network/dio_client.dart';
-import 'package:freshbox_app/features/auth/data/auth_local_datasource.dart';
 import 'package:freshbox_app/features/auth/domain/auth_tokens.dart';
 import 'package:freshbox_app/features/auth/domain/login_credentials.dart';
 import 'package:freshbox_app/features/auth/domain/user.dart';

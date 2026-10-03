@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mocktail/mocktail.dart';
 
 import 'package:freshbox_app/features/admin/presentation/blocs/admin_product_list_bloc.dart';
 import 'package:freshbox_app/features/admin/presentation/blocs/admin_product_form_bloc.dart';
@@ -92,11 +91,4 @@ Future<void> pumpWidgetAndSettle(
 }) async {
   await tester.pumpWidget(widget);
   await tester.pumpAndSettle(duration);
-}
-
-extension on WidgetTester {
-  Future<void> tapAndSettle(Finder finder) async {
-    await tap(finder);
-    await pumpAndSettle();
-  }
 }

@@ -278,9 +278,6 @@ class _ProductsViewState extends State<_ProductsView> {
   }
 
   Future<void> _showCreateDialog(AdminProductFormBloc formBloc) async {
-    // Carregar categorias para o dropdown
-    final categories = await getIt<AdminCategoryRepository>().getAll();
-
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController();
     final slugController = TextEditingController();
@@ -320,8 +317,6 @@ class _ProductsViewState extends State<_ProductsView> {
                         ),
                       );
                     }
-
-                    final categories = snapshot.data ?? [];
 
                     final Widget promoEndsAtField = isOnPromo
                         ? Column(
@@ -614,7 +609,6 @@ Expanded(
       getIt<AdminCategoryRepository>().getAll(),
     ]).then((results) {
       final product = results[0] as Product;
-      final categories = results[1] as List<Category>;
 
       nameController.text = product.name;
       slugController.text = product.slug;
@@ -649,47 +643,9 @@ Expanded(
       context: context,
       builder: (context) => BlocProvider.value(
         value: formBloc,
-        child: StatefulBuilder(
-          builder: (context, setDialogState) {
-            // Carregar produto e categorias
-            Future.wait([
-              getIt<AdminProductRepository>().getById(id),
-              getIt<AdminCategoryRepository>().getAll(),
-            ]).then((results) {
-              final product = results[0] as Product;
-              final categories = results[1] as List<Category>;
-
-              nameController.text = product.name;
-              slugController.text = product.slug;
-              descriptionController.text = product.description ?? '';
-              priceController.text = product.price.toStringAsFixed(2).replaceAll('.', ',');
-              if (product.promoPrice != null) {
-                promoPriceController.text = product.promoPrice!.toStringAsFixed(2).replaceAll('.', ',');
-              }
-              if (product.promoEndsAt != null) {
-                promoEndsAt = product.promoEndsAt!;
-              }
-              selectedUnit = product.unit;
-              selectedCategoryId = product.categoryId;
-              isAvailable = product.isAvailable;
-              isFeatured = product.isFeatured;
-              isOnPromo = product.isOnPromo;
-              isActive = product.isActive;
-              final fullImage = product.images.full;
-              if (fullImage != null && fullImage.isNotEmpty) {
-                mainImageUrlController.text = fullImage;
-              }
-              isLoading = false;
-              setDialogState(() {});
-            }).catchError((e) {
-              if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Erro ao carregar produto: $e'), backgroundColor: Colors.red),
-              );
-              Navigator.pop(context);
-            });
-
-            return BlocConsumer<AdminProductFormBloc, AdminProductFormState>(
+child: StatefulBuilder(
+            builder: (context, setDialogState) {
+              return BlocConsumer<AdminProductFormBloc, AdminProductFormState>(
               listener: (context, state) {},
               builder: (context, state) {
                 if (isLoading) {
@@ -712,8 +668,6 @@ Expanded(
                         ),
                       );
                     }
-
-                    final categories = snapshot.data ?? [];
 
                     final Widget promoEndsAtField = isOnPromo
                         ? Column(

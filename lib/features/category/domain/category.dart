@@ -1,3 +1,5 @@
+// ignore_for_file: invalid_annotation_target
+
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'category.freezed.dart';
@@ -17,6 +19,5 @@ abstract class Category with _$Category {
     @JsonKey(name: 'products_count') required int productsCount,
   }) = _Category;
 
-  factory Category.fromJson(Map<String, dynamic> json) =>
-      _$CategoryFromJson(json);
+  factory Category.fromJson(Map<String, dynamic> json) => _$CategoryFromJson(json);
 }
