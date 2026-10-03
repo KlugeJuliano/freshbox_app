@@ -348,7 +348,11 @@ Endpoints de listagem do Laravel (`categories`, `products`, futuramente `orders`
 - [x] Feature Carrinho: model + repository (local storage por companyId) + bloc + page + badge global
 - [x] Feature Checkout: form entrega/retirada + validação + WhatsApp fallback + navegação pós-sucesso
 - [x] Autenticação (admin): fundação — models (User, AuthTokens, LoginCredentials), AuthRepository (login/me/logout com parsers corretos), AuthLocalDataSource (FlutterSecureStorage com rememberMe), DioClient interceptor com token provider (fonte única, 401 → logout automático), error mapper compartilhado, GoRouterRefreshStream
-- [ ] AuthBloc + LoginPage + integração router (redirects, Checking state)
-- [ ] Painel admin
+- [x] AuthBloc + LoginPage + integração router (redirects, Checking state, GoRouterRefreshStream)
+- [x] Painel Admin — Products: CRUD completo (listagem, criar, editar, deletar, upload imagem)
+- [x] Painel Admin — Categories: CRUD completo (listagem, criar, editar, deletar)
+- [x] Painel Admin — Orders: listagem paginada + filtro por status + detalhe completo + transições de status validadas + WhatsApp
+- [ ] Painel Admin — Banners: CRUD + upload + período de exibição
+- [ ] Painel Admin — Settings: edição store (horário, taxa entrega, contato) + upload logo
 - [ ] Deploy em produção
 - [ ] Primeiro cliente em uso
