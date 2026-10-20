@@ -172,8 +172,28 @@ class DioClient {
     }
   }
 
-  // Helper para Multipart Upload (usado para fotos de produtos e logo)
+  // Helper para Multipart Upload (usado para fotos de produtos e banners)
   Future<Response> postMultipart(
+    String path, {
+    required Map<String, dynamic> data,
+    Options? options,
+    CancelToken? cancelToken,
+  }) =>
+      _sendMultipart('POST', path,
+          data: data, options: options, cancelToken: cancelToken);
+
+  // PUT com FormData (necessário para update de banners com nova imagem)
+  Future<Response> putMultipart(
+    String path, {
+    required Map<String, dynamic> data,
+    Options? options,
+    CancelToken? cancelToken,
+  }) =>
+      _sendMultipart('PUT', path,
+          data: data, options: options, cancelToken: cancelToken);
+
+  Future<Response> _sendMultipart(
+    String method,
     String path, {
     required Map<String, dynamic> data,
     Options? options,
@@ -181,10 +201,10 @@ class DioClient {
   }) async {
     try {
       final formData = FormData.fromMap(data);
-      final response = await _dio.post(
+      final response = await _dio.request(
         path,
         data: formData,
-        options: options,
+        options: (options ?? Options()).copyWith(method: method),
         cancelToken: cancelToken,
       );
       return response;
