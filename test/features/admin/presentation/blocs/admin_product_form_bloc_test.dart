@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:freshbox_app/features/admin/data/admin_product_repository.dart';
 import 'package:freshbox_app/features/admin/presentation/blocs/admin_product_form_bloc.dart';
@@ -8,7 +10,8 @@ import 'package:freshbox_app/features/product/domain/product_image.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-class _MockAdminProductRepository extends Mock implements AdminProductRepository {}
+class _MockAdminProductRepository extends Mock
+    implements AdminProductRepository {}
 
 const tProduct = Product(
   id: 1,
@@ -46,9 +49,35 @@ const tUpdatedProduct = Product(
   categoryId: 1,
 );
 
+const tProductWithImage = Product(
+  id: 2,
+  name: 'Maçã Fuji',
+  slug: 'maca-fuji',
+  description: null,
+  unitRaw: 'kg',
+  price: 8.99,
+  promoPrice: null,
+  promoEndsAtRaw: null,
+  isOnPromo: false,
+  effectivePrice: 8.99,
+  images: ProductImage(
+    thumb: '/storage/products/2/thumb.jpg',
+    card: '/storage/products/2/card.jpg',
+    full: '/storage/products/2/full.jpg',
+  ),
+  isAvailable: true,
+  isFeatured: false,
+  isActive: true,
+  categoryId: 1,
+);
+
 void main() {
   late _MockAdminProductRepository mockRepository;
   late AdminProductFormBloc bloc;
+
+  setUpAll(() {
+    registerFallbackValue(File('/tmp/fallback.jpg'));
+  });
 
   setUp(() {
     mockRepository = _MockAdminProductRepository();
@@ -64,7 +93,8 @@ void main() {
       blocTest<AdminProductFormBloc, AdminProductFormState>(
         'emits [submitting, success] when successful',
         build: () {
-          when(() => mockRepository.create(any())).thenAnswer((_) async => tProduct);
+          when(() => mockRepository.create(any()))
+              .thenAnswer((_) async => tProduct);
           return bloc;
         },
         act: (bloc) => bloc.add(AdminProductFormEvent.create({
@@ -80,7 +110,10 @@ void main() {
         expect: () => [
           const AdminProductFormState.submitting(),
           predicate<AdminProductFormState>((s) => s.maybeWhen(
-                success: (product, msg) => product != null && product.name == 'Banana Nanica' && msg == 'Produto criado com sucesso',
+                success: (product, msg) =>
+                    product != null &&
+                    product.name == 'Banana Nanica' &&
+                    msg == 'Produto criado com sucesso',
                 orElse: () => false,
               )),
         ],
@@ -89,7 +122,8 @@ void main() {
       blocTest<AdminProductFormBloc, AdminProductFormState>(
         'emits [submitting, error] when repository throws',
         build: () {
-          when(() => mockRepository.create(any())).thenThrow(Exception('Validation error'));
+          when(() => mockRepository.create(any()))
+              .thenThrow(Exception('Validation error'));
           return bloc;
         },
         act: (bloc) => bloc.add(AdminProductFormEvent.create({
@@ -111,7 +145,8 @@ void main() {
       blocTest<AdminProductFormBloc, AdminProductFormState>(
         'passes all create data to repository',
         build: () {
-          when(() => mockRepository.create(any())).thenAnswer((_) async => tProduct);
+          when(() => mockRepository.create(any()))
+              .thenAnswer((_) async => tProduct);
           return bloc;
         },
         act: (bloc) => bloc.add(AdminProductFormEvent.create({
@@ -133,11 +168,76 @@ void main() {
         })),
         expect: () => [
           const AdminProductFormState.submitting(),
-          predicate<AdminProductFormState>((s) => s.maybeWhen(success: (_, __) => true, orElse: () => false)),
+          predicate<AdminProductFormState>((s) =>
+              s.maybeWhen(success: (_, __) => true, orElse: () => false)),
         ],
         verify: (bloc) {
           verify(() => mockRepository.create(any())).called(1);
         },
+      );
+
+      blocTest<AdminProductFormBloc, AdminProductFormState>(
+        'uploads image after create and emits success with updated product',
+        build: () {
+          when(() => mockRepository.create(any()))
+              .thenAnswer((_) async => tProduct);
+          when(() => mockRepository.uploadImage(any(), any()))
+              .thenAnswer((_) async => tProductWithImage);
+          return bloc;
+        },
+        act: (bloc) => bloc.add(AdminProductFormEvent.create(
+          {
+            'name': 'Maçã Fuji',
+            'slug': 'maca-fuji',
+            'unit': 'kg',
+            'price': 8.99,
+            'category_id': 1,
+          },
+          image: File('/tmp/opa'),
+        )),
+        expect: () => [
+          const AdminProductFormState.submitting(),
+          predicate<AdminProductFormState>((s) => s.maybeWhen(
+                success: (product, msg) =>
+                    product != null &&
+                    product.images.thumb == '/storage/products/2/thumb.jpg' &&
+                    msg == 'Produto criado com sucesso',
+                orElse: () => false,
+              )),
+        ],
+        verify: (bloc) {
+          verify(() => mockRepository.create(any())).called(1);
+          verify(() => mockRepository.uploadImage(1, any())).called(1);
+        },
+      );
+
+      blocTest<AdminProductFormBloc, AdminProductFormState>(
+        'emits error when create succeeds but image upload fails',
+        build: () {
+          when(() => mockRepository.create(any()))
+              .thenAnswer((_) async => tProduct);
+          when(() => mockRepository.uploadImage(any(), any()))
+              .thenThrow(Exception('Upload failed'));
+          return bloc;
+        },
+        act: (bloc) => bloc.add(AdminProductFormEvent.create(
+          {
+            'name': 'Maçã Fuji',
+            'slug': 'maca-fuji',
+            'unit': 'kg',
+            'price': 8.99,
+          },
+          image: File('/tmp/opa'),
+        )),
+        expect: () => [
+          const AdminProductFormState.submitting(),
+          predicate<AdminProductFormState>((s) => s.maybeWhen(
+                error: (msg) =>
+                    msg.contains('upload da imagem falhou') &&
+                    msg.contains('Upload failed'),
+                orElse: () => false,
+              )),
+        ],
       );
     });
 
@@ -145,7 +245,8 @@ void main() {
       blocTest<AdminProductFormBloc, AdminProductFormState>(
         'emits [submitting, success] when successful',
         build: () {
-          when(() => mockRepository.update(any(), any())).thenAnswer((_) async => tUpdatedProduct);
+          when(() => mockRepository.update(any(), any()))
+              .thenAnswer((_) async => tUpdatedProduct);
           return bloc;
         },
         act: (bloc) => bloc.add(AdminProductFormEvent.update(1, {
@@ -155,7 +256,10 @@ void main() {
         expect: () => [
           const AdminProductFormState.submitting(),
           predicate<AdminProductFormState>((s) => s.maybeWhen(
-                success: (product, msg) => product != null && product.name == 'Banana Nanica Atualizada' && msg == 'Produto atualizado com sucesso',
+                success: (product, msg) =>
+                    product != null &&
+                    product.name == 'Banana Nanica Atualizada' &&
+                    msg == 'Produto atualizado com sucesso',
                 orElse: () => false,
               )),
         ],
@@ -164,10 +268,12 @@ void main() {
       blocTest<AdminProductFormBloc, AdminProductFormState>(
         'emits [submitting, error] when repository throws',
         build: () {
-          when(() => mockRepository.update(any(), any())).thenThrow(Exception('Not found'));
+          when(() => mockRepository.update(any(), any()))
+              .thenThrow(Exception('Not found'));
           return bloc;
         },
-        act: (bloc) => bloc.add(AdminProductFormEvent.update(999, {'name': 'Test'})),
+        act: (bloc) =>
+            bloc.add(AdminProductFormEvent.update(999, {'name': 'Test'})),
         expect: () => [
           const AdminProductFormState.submitting(),
           predicate<AdminProductFormState>((s) => s.maybeWhen(
@@ -180,7 +286,8 @@ void main() {
       blocTest<AdminProductFormBloc, AdminProductFormState>(
         'passes id and update data to repository',
         build: () {
-          when(() => mockRepository.update(any(), any())).thenAnswer((_) async => tUpdatedProduct);
+          when(() => mockRepository.update(any(), any()))
+              .thenAnswer((_) async => tUpdatedProduct);
           return bloc;
         },
         act: (bloc) => bloc.add(AdminProductFormEvent.update(42, {
@@ -189,6 +296,39 @@ void main() {
         })),
         verify: (bloc) {
           verify(() => mockRepository.update(42, any())).called(1);
+        },
+      );
+
+      blocTest<AdminProductFormBloc, AdminProductFormState>(
+        'uploads image after update and emits success with updated product',
+        build: () {
+          when(() => mockRepository.update(any(), any()))
+              .thenAnswer((_) async => tUpdatedProduct);
+          when(() => mockRepository.uploadImage(any(), any()))
+              .thenAnswer((_) async => tProductWithImage);
+          return bloc;
+        },
+        act: (bloc) => bloc.add(AdminProductFormEvent.update(
+          1,
+          {
+            'name': 'Banana Nanica Atualizada',
+            'price': 5.49,
+          },
+          image: File('/tmp/opa'),
+        )),
+        expect: () => [
+          const AdminProductFormState.submitting(),
+          predicate<AdminProductFormState>((s) => s.maybeWhen(
+                success: (product, msg) =>
+                    product != null &&
+                    product.images.thumb == '/storage/products/2/thumb.jpg' &&
+                    msg == 'Produto atualizado com sucesso',
+                orElse: () => false,
+              )),
+        ],
+        verify: (bloc) {
+          verify(() => mockRepository.update(1, any())).called(1);
+          verify(() => mockRepository.uploadImage(1, any())).called(1);
         },
       );
     });
@@ -204,7 +344,8 @@ void main() {
         expect: () => [
           const AdminProductFormState.submitting(),
           predicate<AdminProductFormState>((s) => s.maybeWhen(
-                success: (product, msg) => product == null && msg == 'Produto excluído com sucesso',
+                success: (product, msg) =>
+                    product == null && msg == 'Produto excluído com sucesso',
                 orElse: () => false,
               )),
         ],
@@ -213,7 +354,8 @@ void main() {
       blocTest<AdminProductFormBloc, AdminProductFormState>(
         'emits [submitting, error] when repository throws',
         build: () {
-          when(() => mockRepository.delete(999)).thenThrow(Exception('Cannot delete'));
+          when(() => mockRepository.delete(999))
+              .thenThrow(Exception('Cannot delete'));
           return bloc;
         },
         act: (bloc) => bloc.add(AdminProductFormEvent.delete(999)),
@@ -251,12 +393,18 @@ void main() {
         'resets from submitting state',
         build: () {
           final mockRepo = _MockAdminProductRepository();
-          when(() => mockRepo.create(any()))
-              .thenAnswer((_) => Future.delayed(const Duration(milliseconds: 100), () => tProduct));
+          when(() => mockRepo.create(any())).thenAnswer((_) => Future.delayed(
+              const Duration(milliseconds: 100), () => tProduct));
           return AdminProductFormBloc(mockRepo);
         },
         act: (bloc) {
-          bloc.add(AdminProductFormEvent.create({'name': 'Test', 'slug': 'test', 'unit': 'kg', 'price': 1.0, 'category_id': 1}));
+          bloc.add(AdminProductFormEvent.create({
+            'name': 'Test',
+            'slug': 'test',
+            'unit': 'kg',
+            'price': 1.0,
+            'category_id': 1
+          }));
           bloc.add(const AdminProductFormEvent.reset());
         },
         expect: () => [
