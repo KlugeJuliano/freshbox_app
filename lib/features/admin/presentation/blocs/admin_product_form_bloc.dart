@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/admin_product_repository.dart';
 import 'admin_product_form_event.dart';
 import 'admin_product_form_state.dart';
+import 'package:freshbox_app/core/errors/api_error_mapper.dart';
 
 class AdminProductFormBloc
     extends Bloc<AdminProductFormEvent, AdminProductFormState> {
@@ -46,7 +47,7 @@ class AdminProductFormBloc
             product, 'Produto criado com sucesso'));
       }
     } catch (e) {
-      emit(AdminProductFormState.error(e.toString()));
+      emit(AdminProductFormState.error(describeError(e)));
     }
   }
 
@@ -73,7 +74,7 @@ class AdminProductFormBloc
             product, 'Produto atualizado com sucesso'));
       }
     } catch (e) {
-      emit(AdminProductFormState.error(e.toString()));
+      emit(AdminProductFormState.error(describeError(e)));
     }
   }
 
@@ -87,7 +88,7 @@ class AdminProductFormBloc
       emit(const AdminProductFormState.success(
           null, 'Produto excluído com sucesso'));
     } catch (e) {
-      emit(AdminProductFormState.error(e.toString()));
+      emit(AdminProductFormState.error(describeError(e)));
     }
   }
 }

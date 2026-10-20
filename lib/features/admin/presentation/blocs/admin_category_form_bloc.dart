@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/admin_category_repository.dart';
 import 'admin_category_form_event.dart';
 import 'admin_category_form_state.dart';
+import 'package:freshbox_app/core/errors/api_error_mapper.dart';
 
 class AdminCategoryFormBloc
     extends Bloc<AdminCategoryFormEvent, AdminCategoryFormState> {
@@ -27,9 +28,10 @@ class AdminCategoryFormBloc
     emit(const AdminCategoryFormState.submitting());
     try {
       final category = await _repository.create(data);
-      emit(AdminCategoryFormState.success(category, 'Categoria criada com sucesso'));
+      emit(AdminCategoryFormState.success(
+          category, 'Categoria criada com sucesso'));
     } catch (e) {
-      emit(AdminCategoryFormState.error(e.toString()));
+      emit(AdminCategoryFormState.error(describeError(e)));
     }
   }
 
@@ -41,9 +43,10 @@ class AdminCategoryFormBloc
     emit(const AdminCategoryFormState.submitting());
     try {
       final category = await _repository.update(id, data);
-      emit(AdminCategoryFormState.success(category, 'Categoria atualizada com sucesso'));
+      emit(AdminCategoryFormState.success(
+          category, 'Categoria atualizada com sucesso'));
     } catch (e) {
-      emit(AdminCategoryFormState.error(e.toString()));
+      emit(AdminCategoryFormState.error(describeError(e)));
     }
   }
 
@@ -54,9 +57,10 @@ class AdminCategoryFormBloc
     emit(const AdminCategoryFormState.submitting());
     try {
       await _repository.delete(id);
-      emit(const AdminCategoryFormState.success(null, 'Categoria excluída com sucesso'));
+      emit(const AdminCategoryFormState.success(
+          null, 'Categoria excluída com sucesso'));
     } catch (e) {
-      emit(AdminCategoryFormState.error(e.toString()));
+      emit(AdminCategoryFormState.error(describeError(e)));
     }
   }
 }

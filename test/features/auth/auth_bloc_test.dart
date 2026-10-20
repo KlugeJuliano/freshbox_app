@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dio/dio.dart';
+import 'package:freshbox_app/core/network/api_exception.dart';
 
 import 'package:freshbox_app/features/auth/presentation/auth_bloc.dart';
 import 'package:freshbox_app/features/auth/presentation/auth_event.dart';
@@ -300,7 +301,34 @@ void main() {
         expect: () => [
           const AuthState.loading(),
           predicate<AuthState>((s) => s.maybeWhen(
-                error: (msg) => msg == 'Sessão expirada. Faça login novamente.',
+                error: (msg) =>
+                    msg == 'Credenciais inválidas. Verifique e-mail e senha.',
+                orElse: () => false,
+              )),
+        ],
+      );
+
+      blocTest<AuthBloc, AuthState>(
+        'emits [loading, error] with friendly message on ApiException 401 (real pipeline)',
+        build: () {
+          when(() => mockAuthRepository.login(any())).thenThrow(
+            ApiException(
+              message: 'Sessão expirada. Por favor, faça login novamente.',
+              statusCode: 401,
+            ),
+          );
+          return authBloc;
+        },
+        act: (bloc) => bloc.add(AuthEvent.login(
+          email: adminEmail,
+          password: 'wrong-password',
+          rememberMe: false,
+        )),
+        expect: () => [
+          const AuthState.loading(),
+          predicate<AuthState>((s) => s.maybeWhen(
+                error: (msg) =>
+                    msg == 'Credenciais inválidas. Verifique e-mail e senha.',
                 orElse: () => false,
               )),
         ],
@@ -330,7 +358,8 @@ void main() {
         expect: () => [
           const AuthState.loading(),
           predicate<AuthState>((s) => s.maybeWhen(
-                error: (msg) => msg == 'Sessão expirada. Faça login novamente.',
+                error: (msg) =>
+                    msg == 'Credenciais inválidas. Verifique e-mail e senha.',
                 orElse: () => false,
               )),
         ],

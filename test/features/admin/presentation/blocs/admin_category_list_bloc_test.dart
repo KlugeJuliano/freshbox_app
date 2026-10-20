@@ -1,3 +1,4 @@
+import 'package:freshbox_app/core/network/api_exception.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:freshbox_app/features/admin/data/admin_category_repository.dart';
 import 'package:freshbox_app/features/admin/presentation/blocs/admin_category_list_bloc.dart';
@@ -7,7 +8,8 @@ import 'package:freshbox_app/features/category/domain/category.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-class _MockAdminCategoryRepository extends Mock implements AdminCategoryRepository {}
+class _MockAdminCategoryRepository extends Mock
+    implements AdminCategoryRepository {}
 
 const tCategory = Category(
   id: 1,
@@ -51,14 +53,16 @@ void main() {
       blocTest<AdminCategoryListBloc, AdminCategoryListState>(
         'emits [loading, loaded] when successful',
         build: () {
-          when(() => mockRepository.getAll()).thenAnswer((_) async => [tCategory, tCategory2]);
+          when(() => mockRepository.getAll())
+              .thenAnswer((_) async => [tCategory, tCategory2]);
           return bloc;
         },
         act: (bloc) => bloc.add(const AdminCategoryListEvent.load()),
         expect: () => [
           const AdminCategoryListState.loading(),
           predicate<AdminCategoryListState>((s) => s.maybeWhen(
-                loaded: (categories) => categories.length == 2 && categories.first.name == 'Frutas',
+                loaded: (categories) =>
+                    categories.length == 2 && categories.first.name == 'Frutas',
                 orElse: () => false,
               )),
         ],
@@ -67,7 +71,8 @@ void main() {
       blocTest<AdminCategoryListBloc, AdminCategoryListState>(
         'emits [loading, error] when repository throws',
         build: () {
-          when(() => mockRepository.getAll()).thenThrow(Exception('Network error'));
+          when(() => mockRepository.getAll()).thenThrow(
+              ApiException(message: 'Network error', statusCode: 422));
           return bloc;
         },
         act: (bloc) => bloc.add(const AdminCategoryListEvent.load()),
@@ -83,7 +88,8 @@ void main() {
       blocTest<AdminCategoryListBloc, AdminCategoryListState>(
         'emits [loading, loaded] with empty list when no categories',
         build: () {
-          when(() => mockRepository.getAll()).thenAnswer((_) async => <Category>[]);
+          when(() => mockRepository.getAll())
+              .thenAnswer((_) async => <Category>[]);
           return bloc;
         },
         act: (bloc) => bloc.add(const AdminCategoryListEvent.load()),
@@ -101,7 +107,8 @@ void main() {
       blocTest<AdminCategoryListBloc, AdminCategoryListState>(
         'emits [loading, loaded] when successful (same as load)',
         build: () {
-          when(() => mockRepository.getAll()).thenAnswer((_) async => [tCategory]);
+          when(() => mockRepository.getAll())
+              .thenAnswer((_) async => [tCategory]);
           return bloc;
         },
         act: (bloc) => bloc.add(const AdminCategoryListEvent.refresh()),
@@ -117,7 +124,8 @@ void main() {
       blocTest<AdminCategoryListBloc, AdminCategoryListState>(
         'can be called multiple times',
         build: () {
-          when(() => mockRepository.getAll()).thenAnswer((_) async => [tCategory]);
+          when(() => mockRepository.getAll())
+              .thenAnswer((_) async => [tCategory]);
           return bloc;
         },
         act: (bloc) {
@@ -126,9 +134,11 @@ void main() {
         },
         expect: () => [
           const AdminCategoryListState.loading(),
-          predicate<AdminCategoryListState>((s) => s.maybeWhen(loaded: (_) => true, orElse: () => false)),
+          predicate<AdminCategoryListState>(
+              (s) => s.maybeWhen(loaded: (_) => true, orElse: () => false)),
           const AdminCategoryListState.loading(),
-          predicate<AdminCategoryListState>((s) => s.maybeWhen(loaded: (_) => true, orElse: () => false)),
+          predicate<AdminCategoryListState>(
+              (s) => s.maybeWhen(loaded: (_) => true, orElse: () => false)),
         ],
       );
     });

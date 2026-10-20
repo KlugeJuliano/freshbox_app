@@ -1,3 +1,4 @@
+import 'package:freshbox_app/core/network/api_exception.dart';
 import 'dart:io';
 
 import 'package:bloc_test/bloc_test.dart';
@@ -122,8 +123,8 @@ void main() {
       blocTest<AdminProductFormBloc, AdminProductFormState>(
         'emits [submitting, error] when repository throws',
         build: () {
-          when(() => mockRepository.create(any()))
-              .thenThrow(Exception('Validation error'));
+          when(() => mockRepository.create(any())).thenThrow(
+              ApiException(message: 'Validation error', statusCode: 422));
           return bloc;
         },
         act: (bloc) => bloc.add(AdminProductFormEvent.create({
@@ -216,8 +217,8 @@ void main() {
         build: () {
           when(() => mockRepository.create(any()))
               .thenAnswer((_) async => tProduct);
-          when(() => mockRepository.uploadImage(any(), any()))
-              .thenThrow(Exception('Upload failed'));
+          when(() => mockRepository.uploadImage(any(), any())).thenThrow(
+              ApiException(message: 'Upload failed', statusCode: 422));
           return bloc;
         },
         act: (bloc) => bloc.add(AdminProductFormEvent.create(
@@ -269,7 +270,7 @@ void main() {
         'emits [submitting, error] when repository throws',
         build: () {
           when(() => mockRepository.update(any(), any()))
-              .thenThrow(Exception('Not found'));
+              .thenThrow(ApiException(message: 'Not found', statusCode: 422));
           return bloc;
         },
         act: (bloc) =>
@@ -354,8 +355,8 @@ void main() {
       blocTest<AdminProductFormBloc, AdminProductFormState>(
         'emits [submitting, error] when repository throws',
         build: () {
-          when(() => mockRepository.delete(999))
-              .thenThrow(Exception('Cannot delete'));
+          when(() => mockRepository.delete(999)).thenThrow(
+              ApiException(message: 'Cannot delete', statusCode: 422));
           return bloc;
         },
         act: (bloc) => bloc.add(AdminProductFormEvent.delete(999)),

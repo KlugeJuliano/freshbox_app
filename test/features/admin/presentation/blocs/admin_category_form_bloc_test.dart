@@ -1,3 +1,4 @@
+import 'package:freshbox_app/core/network/api_exception.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:freshbox_app/features/admin/data/admin_category_repository.dart';
 import 'package:freshbox_app/features/admin/presentation/blocs/admin_category_form_bloc.dart';
@@ -7,7 +8,8 @@ import 'package:freshbox_app/features/category/domain/category.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-class _MockAdminCategoryRepository extends Mock implements AdminCategoryRepository {}
+class _MockAdminCategoryRepository extends Mock
+    implements AdminCategoryRepository {}
 
 const tCategory = Category(
   id: 1,
@@ -51,7 +53,8 @@ void main() {
       blocTest<AdminCategoryFormBloc, AdminCategoryFormState>(
         'emits [submitting, success] when successful',
         build: () {
-          when(() => mockRepository.create(any())).thenAnswer((_) async => tCategory);
+          when(() => mockRepository.create(any()))
+              .thenAnswer((_) async => tCategory);
           return bloc;
         },
         act: (bloc) => bloc.add(AdminCategoryFormEvent.create({
@@ -63,7 +66,10 @@ void main() {
         expect: () => [
           const AdminCategoryFormState.submitting(),
           predicate<AdminCategoryFormState>((s) => s.maybeWhen(
-                success: (category, msg) => category != null && category.name == 'Frutas' && msg == 'Categoria criada com sucesso',
+                success: (category, msg) =>
+                    category != null &&
+                    category.name == 'Frutas' &&
+                    msg == 'Categoria criada com sucesso',
                 orElse: () => false,
               )),
         ],
@@ -72,7 +78,8 @@ void main() {
       blocTest<AdminCategoryFormBloc, AdminCategoryFormState>(
         'emits [submitting, error] when repository throws',
         build: () {
-          when(() => mockRepository.create(any())).thenThrow(Exception('Validation error'));
+          when(() => mockRepository.create(any())).thenThrow(
+              ApiException(message: 'Validation error', statusCode: 422));
           return bloc;
         },
         act: (bloc) => bloc.add(AdminCategoryFormEvent.create({
@@ -91,7 +98,8 @@ void main() {
       blocTest<AdminCategoryFormBloc, AdminCategoryFormState>(
         'passes all create data to repository',
         build: () {
-          when(() => mockRepository.create(any())).thenAnswer((_) async => tCategory);
+          when(() => mockRepository.create(any()))
+              .thenAnswer((_) async => tCategory);
           return bloc;
         },
         act: (bloc) => bloc.add(AdminCategoryFormEvent.create({
@@ -104,7 +112,8 @@ void main() {
         })),
         expect: () => [
           const AdminCategoryFormState.submitting(),
-          predicate<AdminCategoryFormState>((s) => s.maybeWhen(success: (_, __) => true, orElse: () => false)),
+          predicate<AdminCategoryFormState>((s) =>
+              s.maybeWhen(success: (_, __) => true, orElse: () => false)),
         ],
         verify: (bloc) {
           verify(() => mockRepository.create(any())).called(1);
@@ -116,7 +125,8 @@ void main() {
       blocTest<AdminCategoryFormBloc, AdminCategoryFormState>(
         'emits [submitting, success] when successful',
         build: () {
-          when(() => mockRepository.update(any(), any())).thenAnswer((_) async => tUpdatedCategory);
+          when(() => mockRepository.update(any(), any()))
+              .thenAnswer((_) async => tUpdatedCategory);
           return bloc;
         },
         act: (bloc) => bloc.add(AdminCategoryFormEvent.update(1, {
@@ -126,7 +136,10 @@ void main() {
         expect: () => [
           const AdminCategoryFormState.submitting(),
           predicate<AdminCategoryFormState>((s) => s.maybeWhen(
-                success: (category, msg) => category != null && category.name == 'Frutas Atualizadas' && msg == 'Categoria atualizada com sucesso',
+                success: (category, msg) =>
+                    category != null &&
+                    category.name == 'Frutas Atualizadas' &&
+                    msg == 'Categoria atualizada com sucesso',
                 orElse: () => false,
               )),
         ],
@@ -135,10 +148,12 @@ void main() {
       blocTest<AdminCategoryFormBloc, AdminCategoryFormState>(
         'emits [submitting, error] when repository throws',
         build: () {
-          when(() => mockRepository.update(any(), any())).thenThrow(Exception('Not found'));
+          when(() => mockRepository.update(any(), any()))
+              .thenThrow(ApiException(message: 'Not found', statusCode: 422));
           return bloc;
         },
-        act: (bloc) => bloc.add(AdminCategoryFormEvent.update(999, {'name': 'Test'})),
+        act: (bloc) =>
+            bloc.add(AdminCategoryFormEvent.update(999, {'name': 'Test'})),
         expect: () => [
           const AdminCategoryFormState.submitting(),
           predicate<AdminCategoryFormState>((s) => s.maybeWhen(
@@ -151,7 +166,8 @@ void main() {
       blocTest<AdminCategoryFormBloc, AdminCategoryFormState>(
         'passes id and update data to repository',
         build: () {
-          when(() => mockRepository.update(any(), any())).thenAnswer((_) async => tUpdatedCategory);
+          when(() => mockRepository.update(any(), any()))
+              .thenAnswer((_) async => tUpdatedCategory);
           return bloc;
         },
         act: (bloc) => bloc.add(AdminCategoryFormEvent.update(42, {
@@ -175,7 +191,8 @@ void main() {
         expect: () => [
           const AdminCategoryFormState.submitting(),
           predicate<AdminCategoryFormState>((s) => s.maybeWhen(
-                success: (category, msg) => category == null && msg == 'Categoria excluída com sucesso',
+                success: (category, msg) =>
+                    category == null && msg == 'Categoria excluída com sucesso',
                 orElse: () => false,
               )),
         ],
@@ -184,7 +201,8 @@ void main() {
       blocTest<AdminCategoryFormBloc, AdminCategoryFormState>(
         'emits [submitting, error] when repository throws',
         build: () {
-          when(() => mockRepository.delete(999)).thenThrow(Exception('Cannot delete'));
+          when(() => mockRepository.delete(999)).thenThrow(
+              ApiException(message: 'Cannot delete', statusCode: 422));
           return bloc;
         },
         act: (bloc) => bloc.add(AdminCategoryFormEvent.delete(999)),
@@ -222,12 +240,13 @@ void main() {
         'resets from submitting state',
         build: () {
           final mockRepo = _MockAdminCategoryRepository();
-          when(() => mockRepo.create(any()))
-              .thenAnswer((_) => Future.delayed(const Duration(milliseconds: 100), () => tCategory));
+          when(() => mockRepo.create(any())).thenAnswer((_) => Future.delayed(
+              const Duration(milliseconds: 100), () => tCategory));
           return AdminCategoryFormBloc(mockRepo);
         },
         act: (bloc) {
-          bloc.add(AdminCategoryFormEvent.create({'name': 'Test', 'slug': 'test'}));
+          bloc.add(
+              AdminCategoryFormEvent.create({'name': 'Test', 'slug': 'test'}));
           bloc.add(const AdminCategoryFormEvent.reset());
         },
         expect: () => [
