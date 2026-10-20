@@ -441,7 +441,7 @@ class _ProductsViewState extends State<_ProductsView> {
                                         decoration: const InputDecoration(
                                           labelText: 'Unidade *',
                                         ),
-                                        items: ProductUnit.values.map((unit) {
+                                        items: ProductUnit.values.where((u) => u != ProductUnit.unknown).map((unit) {
                                           return DropdownMenuItem<ProductUnit>(
                                             value: unit,
                                             child: Text(unit.label),
@@ -532,7 +532,7 @@ Expanded(
                                       'slug': slugController.text.trim(),
                                       'description': descriptionController.text.trim().isEmpty ? null : descriptionController.text.trim(),
                                       'price': double.tryParse(priceController.text.replaceAll(',', '.')) ?? 0,
-                                      'unit': selectedUnit.name,
+                                      'unit': selectedUnit.apiValue,
                                       'category_id': selectedCategoryId,
                                       'is_available': isAvailable,
                                       'is_featured': isFeatured,
@@ -792,7 +792,7 @@ child: StatefulBuilder(
                                         decoration: const InputDecoration(
                                           labelText: 'Unidade *',
                                         ),
-                                        items: ProductUnit.values.map((unit) {
+                                        items: ProductUnit.values.where((u) => u != ProductUnit.unknown).map((unit) {
                                           return DropdownMenuItem<ProductUnit>(
                                             value: unit,
                                             child: Text(unit.label),
@@ -883,7 +883,7 @@ Expanded(
                                       'slug': slugController.text.trim(),
                                       'description': descriptionController.text.trim().isEmpty ? null : descriptionController.text.trim(),
                                       'price': double.tryParse(priceController.text.replaceAll(',', '.')) ?? 0,
-                                      'unit': selectedUnit.name,
+                                      'unit': selectedUnit.apiValue,
                                       'category_id': selectedCategoryId,
                                       'is_available': isAvailable,
                                       'is_featured': isFeatured,
