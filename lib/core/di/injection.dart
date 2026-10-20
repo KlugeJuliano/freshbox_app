@@ -24,12 +24,15 @@ import '../../features/auth/presentation/auth_event.dart';
 import '../../features/admin/data/admin_category_repository.dart';
 import '../../features/admin/data/admin_product_repository.dart';
 import '../../features/admin/data/admin_order_repository.dart';
+import '../../features/admin/data/admin_banner_repository.dart';
 import '../../features/admin/presentation/blocs/admin_category_list_bloc.dart';
 import '../../features/admin/presentation/blocs/admin_category_form_bloc.dart';
 import '../../features/admin/presentation/blocs/admin_product_list_bloc.dart';
 import '../../features/admin/presentation/blocs/admin_product_form_bloc.dart';
 import '../../features/admin/presentation/blocs/admin_order_list_bloc.dart';
 import '../../features/admin/presentation/blocs/admin_order_detail_bloc.dart';
+import '../../features/admin/presentation/blocs/admin_banner_list_bloc.dart';
+import '../../features/admin/presentation/blocs/admin_banner_form_bloc.dart';
 
 import 'package:go_router/go_router.dart';
 import '../../app/router.dart';
@@ -70,6 +73,8 @@ Future<void> setupDependencies() async {
       () => AdminProductRepository(getIt<DioClient>()));
   getIt.registerLazySingleton<AdminOrderRepository>(
       () => AdminOrderRepository(getIt<DioClient>()));
+  getIt.registerLazySingleton<AdminBannerRepository>(
+      () => AdminBannerRepository(getIt<DioClient>()));
 
   // Blocs
   getIt.registerFactory<CategoryBloc>(
@@ -98,6 +103,10 @@ Future<void> setupDependencies() async {
       () => AdminOrderListBloc(getIt<AdminOrderRepository>()));
   getIt.registerFactory<AdminOrderDetailBloc>(
       () => AdminOrderDetailBloc(getIt<AdminOrderRepository>()));
+  getIt.registerFactory<AdminBannerListBloc>(
+      () => AdminBannerListBloc(getIt<AdminBannerRepository>()));
+  getIt.registerFactory<AdminBannerFormBloc>(
+      () => AdminBannerFormBloc(getIt<AdminBannerRepository>()));
 
   // Configurar token provider no DioClient
   getIt<DioClient>()
