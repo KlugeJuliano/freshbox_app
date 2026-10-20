@@ -41,7 +41,7 @@ A arquitetura é **multiempresa (white-label)**: um único backend serve múltip
 
 ## Funcionalidades
 
-### App cliente (planejado)
+### App cliente
 - Vitrine com banners e campanhas programadas
 - Catálogo por categorias com busca
 - Ofertas do dia e produtos em destaque
@@ -51,10 +51,10 @@ A arquitetura é **multiempresa (white-label)**: um único backend serve múltip
 - Pedido enviado como mensagem formatada no WhatsApp
 - Informações da loja: horário, endereço, contato
 
-### Painel admin (no próprio app, planejado)
-- Gestão de categorias e produtos
+### Painel admin (no próprio app)
+- Login com token armazenado (401 em endpoint autenticado → sessão expirada, volta ao login)
+- Gestão de categorias e produtos (CRUD com upload de foto via câmera/galeria)
 - Upload de fotos com geração automática de 3 variantes (thumb, card, full)
-- Banners com período de exibição configurável
 - Gestão de pedidos com controle de status
 - Configurações da loja (horário, taxas, dados de contato)
 
@@ -111,27 +111,46 @@ lib/
 │ │ └── local_storage.dart
 │ └── utils/
 │ ├── currency_formatter.dart
+│ ├── image_picker_helper.dart # pick + compressão local (JPEG ~78%, ~1200px)
+│ ├── slug_generator.dart
 │ └── whatsapp_helper.dart
 ├── features/
+│ ├── admin/
+│ │ ├── data/ # admin_category_repository, admin_product_repository, admin_order_repository
+│ │ ├── domain/ # admin_order, admin_order_item, admin_order_status, admin_delivery_address
+│ │ └── presentation/
+│ │ ├── admin_layout.dart, admin_dashboard_page.dart, admin_settings_page.dart
+│ │ ├── admin_banners_page.dart (em desenvolvimento)
+│ │ ├── admin_categories_page.dart, admin_products_page.dart
+│ │ ├── admin_orders_page.dart, admin_order_detail_page.dart
+│ │ └── blocs/ # list/form blocs por entidade (category, product, order)
 │ ├── auth/
 │ │ ├── data/ # auth_local_datasource.dart, auth_repository.dart
 │ │ ├── domain/ # user.dart, auth_tokens.dart, login_credentials.dart (models freezed)
-│ │ └── presentation/ # auth_bloc.dart, login_page.dart (a implementar)
+│ │ └── presentation/ # auth_bloc.dart, login_page.dart
+│ ├── cart/
+│ │ ├── data/ # cart_repository.dart (persistente por company)
+│ │ └── presentation/ # cart_bloc.dart, cart_page.dart
 │ ├── category/
 │ │ ├── data/ # category_repository.dart
 │ │ ├── domain/ # category.dart (model freezed)
 │ │ └── presentation/ # category_bloc.dart, categories_page.dart
+│ ├── checkout/
+│ │ └── presentation/ # checkout_bloc.dart, checkout_page.dart
+│ ├── home/
+│ │ └── home_page.dart
+│ ├── order/
+│ │ ├── data/ # order_repository.dart
+│ │ └── domain/ # order.dart (model freezed) — sucesso enviado via checkout
 │ ├── product/
 │ │ ├── data/ # product_repository.dart
 │ │ ├── domain/ # product.dart, product_image.dart, product_unit.dart (models freezed)
 │ │ └── presentation/ # product_list_bloc.dart, product_detail_bloc.dart, product_list_page.dart, product_detail_page.dart, widgets/
-│ ├── home/
-│ │ └── home_page.dart
 │ └── store/
 │ ├── data/ # store_repository.dart
 │ └── domain/ # store.dart (model freezed)
 ├── shared/
-│ └── widgets/ # cached_image, error_retry_widget, store_closed_banner
+│ └── widgets/ # cached_image, error_retry_widget
 └── main.dart
 
 
