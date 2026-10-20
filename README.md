@@ -120,7 +120,7 @@ lib/
 │ │ ├── domain/ # admin_order, admin_order_item, admin_order_status, admin_delivery_address
 │ │ └── presentation/
 │ │ ├── admin_layout.dart, admin_dashboard_page.dart, admin_settings_page.dart
-│ │ ├── admin_banners_page.dart (em desenvolvimento)
+│ │ ├── admin_banners_page.dart
 │ │ ├── admin_categories_page.dart, admin_products_page.dart
 │ │ ├── admin_orders_page.dart, admin_order_detail_page.dart
 │ │ └── blocs/ # list/form blocs por entidade (category, product, order)
@@ -371,7 +371,7 @@ Endpoints de listagem do Laravel (`categories`, `products`, futuramente `orders`
 - [x] Painel Admin — Products: CRUD completo (listagem, criar, editar, deletar, upload imagem)
 - [x] Painel Admin — Categories: CRUD completo (listagem, criar, editar, deletar)
 - [x] Painel Admin — Orders: listagem paginada + filtro por status + detalhe completo + transições de status validadas + WhatsApp
-- [ ] Painel Admin — Banners: CRUD + upload + período de exibição
+- [x] Painel Admin — Banners: CRUD completo (listagem, criar, editar, deletar, toggle ativo/inativo, upload de imagem desktop/mobile, período de exibição, link para produto/categoria/URL)
 - [ ] Painel Admin — Settings: edição store (horário, taxa entrega, contato) + upload logo
 - [ ] Deploy em produção
 - [ ] Primeiro cliente em uso
