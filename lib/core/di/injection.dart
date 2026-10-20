@@ -24,12 +24,15 @@ import '../../features/auth/presentation/auth_event.dart';
 import '../../features/admin/data/admin_category_repository.dart';
 import '../../features/admin/data/admin_product_repository.dart';
 import '../../features/admin/data/admin_order_repository.dart';
+import '../../features/admin/data/admin_banner_repository.dart';
 import '../../features/admin/presentation/blocs/admin_category_list_bloc.dart';
 import '../../features/admin/presentation/blocs/admin_category_form_bloc.dart';
 import '../../features/admin/presentation/blocs/admin_product_list_bloc.dart';
 import '../../features/admin/presentation/blocs/admin_product_form_bloc.dart';
 import '../../features/admin/presentation/blocs/admin_order_list_bloc.dart';
 import '../../features/admin/presentation/blocs/admin_order_detail_bloc.dart';
+import '../../features/admin/presentation/blocs/admin_banner_list_bloc.dart';
+import '../../features/admin/presentation/blocs/admin_banner_form_bloc.dart';
 
 import 'package:go_router/go_router.dart';
 import '../../app/router.dart';
@@ -44,7 +47,8 @@ Future<void> setupDependencies() async {
   getIt.registerLazySingleton<DioClient>(() => DioClient(Dio()));
   getIt.registerLazySingleton<LocalStorage>(
       () => LocalStorage(getIt<SharedPreferences>()));
-  getIt.registerLazySingleton<FlutterSecureStorage>(() => const FlutterSecureStorage());
+  getIt.registerLazySingleton<FlutterSecureStorage>(
+      () => const FlutterSecureStorage());
 
   // Repositories
   getIt.registerLazySingleton<StoreRepository>(
@@ -63,12 +67,14 @@ Future<void> setupDependencies() async {
       () => AuthLocalDataSource(getIt<FlutterSecureStorage>()));
   getIt.registerLazySingleton<AuthRepository>(
       () => AuthRepository(getIt<DioClient>()));
-getIt.registerLazySingleton<AdminCategoryRepository>(
+  getIt.registerLazySingleton<AdminCategoryRepository>(
       () => AdminCategoryRepository(getIt<DioClient>()));
-getIt.registerLazySingleton<AdminProductRepository>(
-    () => AdminProductRepository(getIt<DioClient>()));
-getIt.registerLazySingleton<AdminOrderRepository>(
-    () => AdminOrderRepository(getIt<DioClient>()));
+  getIt.registerLazySingleton<AdminProductRepository>(
+      () => AdminProductRepository(getIt<DioClient>()));
+  getIt.registerLazySingleton<AdminOrderRepository>(
+      () => AdminOrderRepository(getIt<DioClient>()));
+  getIt.registerLazySingleton<AdminBannerRepository>(
+      () => AdminBannerRepository(getIt<DioClient>()));
 
   // Blocs
   getIt.registerFactory<CategoryBloc>(
@@ -78,27 +84,38 @@ getIt.registerLazySingleton<AdminOrderRepository>(
   getIt.registerFactory<ProductDetailBloc>(
       () => ProductDetailBloc(getIt<ProductRepository>()));
   getIt.registerFactory<HomeBloc>(() => HomeBloc(getIt<HomeRepository>()));
-  getIt.registerLazySingleton<CartBloc>(() => CartBloc(getIt<CartRepository>()));
+  getIt
+      .registerLazySingleton<CartBloc>(() => CartBloc(getIt<CartRepository>()));
   getIt.registerFactory<CheckoutBloc>(
       () => CheckoutBloc(getIt<OrderRepository>(), getIt<CartBloc>()));
-  getIt.registerLazySingleton<AuthBloc>(
-      () => AuthBloc(getIt<AuthRepository>(), getIt<AuthLocalDataSource>())
+  getIt.registerLazySingleton<AuthBloc>(() =>
+      AuthBloc(getIt<AuthRepository>(), getIt<AuthLocalDataSource>())
         ..add(const AuthEvent.checkAuthStatus()));
-getIt.registerFactory<AdminCategoryListBloc>(
+  getIt.registerFactory<AdminCategoryListBloc>(
       () => AdminCategoryListBloc(getIt<AdminCategoryRepository>()));
-getIt.registerFactory<AdminCategoryFormBloc>(
-    () => AdminCategoryFormBloc(getIt<AdminCategoryRepository>()));
-getIt.registerFactory<AdminProductListBloc>(
-    () => AdminProductListBloc(getIt<AdminProductRepository>()));
-getIt.registerFactory<AdminProductFormBloc>(
-    () => AdminProductFormBloc(getIt<AdminProductRepository>()));
-getIt.registerFactory<AdminOrderListBloc>(
-    () => AdminOrderListBloc(getIt<AdminOrderRepository>()));
-getIt.registerFactory<AdminOrderDetailBloc>(
-    () => AdminOrderDetailBloc(getIt<AdminOrderRepository>()));
+  getIt.registerFactory<AdminCategoryFormBloc>(
+      () => AdminCategoryFormBloc(getIt<AdminCategoryRepository>()));
+  getIt.registerFactory<AdminProductListBloc>(
+      () => AdminProductListBloc(getIt<AdminProductRepository>()));
+  getIt.registerFactory<AdminProductFormBloc>(
+      () => AdminProductFormBloc(getIt<AdminProductRepository>()));
+  getIt.registerFactory<AdminOrderListBloc>(
+      () => AdminOrderListBloc(getIt<AdminOrderRepository>()));
+  getIt.registerFactory<AdminOrderDetailBloc>(
+      () => AdminOrderDetailBloc(getIt<AdminOrderRepository>()));
+  getIt.registerFactory<AdminBannerListBloc>(
+      () => AdminBannerListBloc(getIt<AdminBannerRepository>()));
+  getIt.registerFactory<AdminBannerFormBloc>(
+      () => AdminBannerFormBloc(getIt<AdminBannerRepository>()));
 
   // Configurar token provider no DioClient
-  getIt<DioClient>().setTokenProvider(() => getIt<AuthLocalDataSource>().getToken());
+  getIt<DioClient>()
+      .setTokenProvider(() => getIt<AuthLocalDataSource>().getToken());
+
+  // 401 em endpoint autenticado -> sessão expirada: limpa tokens e volta ao login
+  getIt<DioClient>().setUnauthorizedHandler(() {
+    getIt<AuthBloc>().add(const AuthEvent.sessionExpired());
+  });
 
   getIt.registerLazySingleton<GoRouter>(() => buildRouter());
 }

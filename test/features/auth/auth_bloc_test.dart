@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:dio/dio.dart';
+import 'package:freshbox_app/core/network/api_exception.dart';
 
 import 'package:freshbox_app/features/auth/presentation/auth_bloc.dart';
 import 'package:freshbox_app/features/auth/presentation/auth_event.dart';
@@ -13,6 +14,7 @@ import 'package:freshbox_app/features/auth/domain/auth_tokens.dart';
 import 'package:freshbox_app/features/auth/domain/login_credentials.dart';
 
 class _MockAuthRepository extends Mock implements AuthRepository {}
+
 class _MockAuthLocalDataSource extends Mock implements AuthLocalDataSource {}
 
 void main() {
@@ -51,7 +53,8 @@ void main() {
       blocTest<AuthBloc, AuthState>(
         'emits [checking, unauthenticated] when no token stored',
         build: () {
-          when(() => mockLocalDataSource.getToken()).thenAnswer((_) async => null);
+          when(() => mockLocalDataSource.getToken())
+              .thenAnswer((_) async => null);
           return authBloc;
         },
         act: (bloc) => bloc.add(const AuthEvent.checkAuthStatus()),
@@ -64,27 +67,30 @@ void main() {
       blocTest<AuthBloc, AuthState>(
         'emits [checking, authenticated] when valid token and me() succeeds',
         build: () {
-          when(() => mockLocalDataSource.getToken()).thenAnswer((_) async => 'valid-token');
+          when(() => mockLocalDataSource.getToken())
+              .thenAnswer((_) async => 'valid-token');
           when(() => mockAuthRepository.me()).thenAnswer((_) async => User(
-            id: 1,
-            name: 'Admin',
-            email: 'admin@test.com',
-            role: 'admin',
-            companyId: 1,
-          ));
+                id: 1,
+                name: 'Admin',
+                email: 'admin@test.com',
+                role: 'admin',
+                companyId: 1,
+              ));
           return authBloc;
         },
         act: (bloc) => bloc.add(const AuthEvent.checkAuthStatus()),
         expect: () => [
           const AuthState.checking(),
-          predicate<AuthState>((s) => s.maybeWhen(authenticated: (_) => true, orElse: () => false)),
+          predicate<AuthState>((s) =>
+              s.maybeWhen(authenticated: (_) => true, orElse: () => false)),
         ],
       );
 
       blocTest<AuthBloc, AuthState>(
         'emits [checking, unauthenticated] when me() throws 401',
         build: () {
-          when(() => mockLocalDataSource.getToken()).thenAnswer((_) async => 'expired-token');
+          when(() => mockLocalDataSource.getToken())
+              .thenAnswer((_) async => 'expired-token');
           when(() => mockAuthRepository.me()).thenThrow(
             DioException(
               requestOptions: RequestOptions(path: '/auth/me'),
@@ -114,10 +120,12 @@ void main() {
       blocTest<AuthBloc, AuthState>(
         'emits [loading, authenticated] on successful login',
         build: () {
-          when(() => mockAuthRepository.login(any())).thenAnswer((_) async => AuthTokens(
-            accessToken: 'new-token',
-          ));
-          when(() => mockLocalDataSource.saveTokens(any(), rememberMe: true)).thenAnswer((_) async {});
+          when(() => mockAuthRepository.login(any()))
+              .thenAnswer((_) async => AuthTokens(
+                    accessToken: 'new-token',
+                  ));
+          when(() => mockLocalDataSource.saveTokens(any(), rememberMe: true))
+              .thenAnswer((_) async {});
           when(() => mockAuthRepository.parseLoginUser(any())).thenReturn(User(
             id: 1,
             name: 'Admin',
@@ -134,7 +142,8 @@ void main() {
         )),
         expect: () => [
           const AuthState.loading(),
-          predicate<AuthState>((s) => s.maybeWhen(authenticated: (_) => true, orElse: () => false)),
+          predicate<AuthState>((s) =>
+              s.maybeWhen(authenticated: (_) => true, orElse: () => false)),
         ],
       );
 
@@ -149,7 +158,9 @@ void main() {
                 statusCode: 422,
                 data: {
                   'message': 'Validation error',
-                  'errors': {'email': ['Invalid email format']},
+                  'errors': {
+                    'email': ['Invalid email format']
+                  },
                 },
               ),
               type: DioExceptionType.badResponse,
@@ -164,7 +175,8 @@ void main() {
         )),
         expect: () => [
           const AuthState.loading(),
-          predicate<AuthState>((s) => s.maybeWhen(error: (_) => true, orElse: () => false)),
+          predicate<AuthState>(
+              (s) => s.maybeWhen(error: (_) => true, orElse: () => false)),
         ],
       );
 
@@ -187,7 +199,8 @@ void main() {
         )),
         expect: () => [
           const AuthState.loading(),
-          predicate<AuthState>((s) => s.maybeWhen(error: (_) => true, orElse: () => false)),
+          predicate<AuthState>(
+              (s) => s.maybeWhen(error: (_) => true, orElse: () => false)),
         ],
       );
     });
@@ -197,7 +210,8 @@ void main() {
         'calls logout, clears tokens, emits unauthenticated',
         build: () {
           when(() => mockAuthRepository.logout()).thenAnswer((_) async {});
-          when(() => mockLocalDataSource.clearTokens()).thenAnswer((_) async {});
+          when(() => mockLocalDataSource.clearTokens())
+              .thenAnswer((_) async {});
           return authBloc;
         },
         act: (bloc) => bloc.add(const AuthEvent.logout()),
@@ -209,8 +223,10 @@ void main() {
       blocTest<AuthBloc, AuthState>(
         'emits unauthenticated even if logout fails',
         build: () {
-          when(() => mockAuthRepository.logout()).thenThrow(Exception('Network error'));
-          when(() => mockLocalDataSource.clearTokens()).thenAnswer((_) async {});
+          when(() => mockAuthRepository.logout())
+              .thenThrow(Exception('Network error'));
+          when(() => mockLocalDataSource.clearTokens())
+              .thenAnswer((_) async {});
           return authBloc;
         },
         act: (bloc) => bloc.add(const AuthEvent.logout()),
@@ -227,10 +243,12 @@ void main() {
       blocTest<AuthBloc, AuthState>(
         'emits [loading, authenticated] with admin role on successful admin login',
         build: () {
-          when(() => mockAuthRepository.login(any())).thenAnswer((_) async => AuthTokens(
-            accessToken: 'admin-token',
-          ));
-          when(() => mockLocalDataSource.saveTokens(any(), rememberMe: true)).thenAnswer((_) async {});
+          when(() => mockAuthRepository.login(any()))
+              .thenAnswer((_) async => AuthTokens(
+                    accessToken: 'admin-token',
+                  ));
+          when(() => mockLocalDataSource.saveTokens(any(), rememberMe: true))
+              .thenAnswer((_) async {});
           when(() => mockAuthRepository.parseLoginUser(any())).thenReturn(User(
             id: 1,
             name: 'Admin User',
@@ -248,13 +266,14 @@ void main() {
         expect: () => [
           const AuthState.loading(),
           predicate<AuthState>((s) => s.maybeWhen(
-            authenticated: (user) => user.role == 'admin',
-            orElse: () => false,
-          )),
+                authenticated: (user) => user.role == 'admin',
+                orElse: () => false,
+              )),
         ],
         verify: (_) {
           verify(() => mockAuthRepository.login(any())).called(1);
-          verify(() => mockLocalDataSource.saveTokens(any(), rememberMe: true)).called(1);
+          verify(() => mockLocalDataSource.saveTokens(any(), rememberMe: true))
+              .called(1);
         },
       );
 
@@ -282,9 +301,36 @@ void main() {
         expect: () => [
           const AuthState.loading(),
           predicate<AuthState>((s) => s.maybeWhen(
-            error: (msg) => msg == 'Sessão expirada. Faça login novamente.',
-            orElse: () => false,
-          )),
+                error: (msg) =>
+                    msg == 'Credenciais inválidas. Verifique e-mail e senha.',
+                orElse: () => false,
+              )),
+        ],
+      );
+
+      blocTest<AuthBloc, AuthState>(
+        'emits [loading, error] with friendly message on ApiException 401 (real pipeline)',
+        build: () {
+          when(() => mockAuthRepository.login(any())).thenThrow(
+            ApiException(
+              message: 'Sessão expirada. Por favor, faça login novamente.',
+              statusCode: 401,
+            ),
+          );
+          return authBloc;
+        },
+        act: (bloc) => bloc.add(AuthEvent.login(
+          email: adminEmail,
+          password: 'wrong-password',
+          rememberMe: false,
+        )),
+        expect: () => [
+          const AuthState.loading(),
+          predicate<AuthState>((s) => s.maybeWhen(
+                error: (msg) =>
+                    msg == 'Credenciais inválidas. Verifique e-mail e senha.',
+                orElse: () => false,
+              )),
         ],
       );
 
@@ -312,9 +358,10 @@ void main() {
         expect: () => [
           const AuthState.loading(),
           predicate<AuthState>((s) => s.maybeWhen(
-            error: (msg) => msg == 'Sessão expirada. Faça login novamente.',
-            orElse: () => false,
-          )),
+                error: (msg) =>
+                    msg == 'Credenciais inválidas. Verifique e-mail e senha.',
+                orElse: () => false,
+              )),
         ],
       );
     });
@@ -323,7 +370,8 @@ void main() {
       blocTest<AuthBloc, AuthState>(
         'emits unauthenticated when token expires during checkAuthStatus',
         build: () {
-          when(() => mockLocalDataSource.getToken()).thenAnswer((_) async => 'expired-token');
+          when(() => mockLocalDataSource.getToken())
+              .thenAnswer((_) async => 'expired-token');
           when(() => mockAuthRepository.me()).thenThrow(
             DioException(
               requestOptions: RequestOptions(path: '/auth/me'),
@@ -342,6 +390,44 @@ void main() {
           const AuthState.checking(),
           const AuthState.unauthenticated(),
         ],
+      );
+    });
+
+    group('SessionExpired', () {
+      blocTest<AuthBloc, AuthState>(
+        'clears local tokens and emits unauthenticated without calling logout',
+        build: () {
+          when(() => mockLocalDataSource.clearTokens())
+              .thenAnswer((_) async {});
+          return authBloc;
+        },
+        act: (bloc) => bloc.add(const AuthEvent.sessionExpired()),
+        expect: () => [
+          const AuthState.unauthenticated(),
+        ],
+        verify: (_) {
+          verifyNever(() => mockAuthRepository.logout());
+          verify(() => mockLocalDataSource.clearTokens()).called(1);
+        },
+      );
+
+      blocTest<AuthBloc, AuthState>(
+        'handles repeated 401s: clearTokens twice, single unauthenticated emit (const state dedup)',
+        build: () {
+          when(() => mockLocalDataSource.clearTokens())
+              .thenAnswer((_) async {});
+          return authBloc;
+        },
+        act: (bloc) {
+          bloc.add(const AuthEvent.sessionExpired());
+          bloc.add(const AuthEvent.sessionExpired());
+        },
+        expect: () => [
+          const AuthState.unauthenticated(),
+        ],
+        verify: (_) {
+          verify(() => mockLocalDataSource.clearTokens()).called(2);
+        },
       );
     });
   });

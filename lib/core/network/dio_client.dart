@@ -5,8 +5,12 @@ import 'api_exception.dart';
 class DioClient {
   Dio _dio;
   Future<String?> Function()? _tokenProvider;
+  void Function()? _onUnauthorized;
 
   DioClient(this._dio) {
+    // O adapter pode já ter sido configurado pelo chamador (testes via
+    // HttpClientAdapter falso) — preserva; em produção é o adapter padrão.
+    final preconfiguredAdapter = _dio.httpClientAdapter;
     _dio = Dio(
       BaseOptions(
         baseUrl: AppConstants.apiBaseUrl,
@@ -19,6 +23,7 @@ class DioClient {
         },
       ),
     );
+    _dio.httpClientAdapter = preconfiguredAdapter;
 
     _dio.interceptors.add(LogInterceptor(
       requestBody: true,
@@ -33,6 +38,13 @@ class DioClient {
     }
   }
 
+  /// Disparado quando o servidor responde 401 em qualquer request autenticado
+  /// (exceto /auth/login). Limpa a sessão no app e devolve o usuário à tela
+  /// de login; não chama /auth/logout pois o token já é inválido no servidor.
+  void setUnauthorizedHandler(void Function()? handler) {
+    _onUnauthorized = handler;
+  }
+
   void _addAuthInterceptor() {
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
@@ -44,8 +56,13 @@ class DioClient {
       },
       onError: (error, handler) {
         if (error.response?.statusCode == 401) {
-          // Token inválido/expirado - limpa tokens locais e dispara logout
-          // Nota: não chamamos /auth/logout aqui pois o token já é inválido no servidor
+          final isLoginRequest =
+              error.requestOptions.path.contains('/auth/login');
+          // Credenciais inválidas no login são erro normal de formulário;
+          // 401 em endpoint autenticado significa sessão expirada.
+          if (!isLoginRequest) {
+            _onUnauthorized?.call();
+          }
         }
         return handler.next(error);
       },
@@ -155,8 +172,28 @@ class DioClient {
     }
   }
 
-  // Helper para Multipart Upload (usado para fotos de produtos e logo)
+  // Helper para Multipart Upload (usado para fotos de produtos e banners)
   Future<Response> postMultipart(
+    String path, {
+    required Map<String, dynamic> data,
+    Options? options,
+    CancelToken? cancelToken,
+  }) =>
+      _sendMultipart('POST', path,
+          data: data, options: options, cancelToken: cancelToken);
+
+  // PUT com FormData (necessário para update de banners com nova imagem)
+  Future<Response> putMultipart(
+    String path, {
+    required Map<String, dynamic> data,
+    Options? options,
+    CancelToken? cancelToken,
+  }) =>
+      _sendMultipart('PUT', path,
+          data: data, options: options, cancelToken: cancelToken);
+
+  Future<Response> _sendMultipart(
+    String method,
     String path, {
     required Map<String, dynamic> data,
     Options? options,
@@ -164,10 +201,10 @@ class DioClient {
   }) async {
     try {
       final formData = FormData.fromMap(data);
-      final response = await _dio.post(
+      final response = await _dio.request(
         path,
         data: formData,
-        options: options,
+        options: (options ?? Options()).copyWith(method: method),
         cancelToken: cancelToken,
       );
       return response;

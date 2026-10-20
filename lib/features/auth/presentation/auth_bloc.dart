@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:freshbox_app/core/errors/api_error_mapper.dart';
+import 'package:freshbox_app/core/network/api_exception.dart';
 import 'package:freshbox_app/features/auth/data/auth_local_datasource.dart';
 import 'package:freshbox_app/features/auth/data/auth_repository.dart';
 import 'package:freshbox_app/features/auth/domain/login_credentials.dart';
@@ -12,12 +13,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _repository;
   final AuthLocalDataSource _localDataSource;
 
-  AuthBloc(this._repository, this._localDataSource) : super(const AuthState.checking()) {
+  AuthBloc(this._repository, this._localDataSource)
+      : super(const AuthState.checking()) {
     on<AuthEvent>((event, emit) async {
       await event.when(
         checkAuthStatus: () => _onCheckAuthStatus(emit),
-        login: (email, password, rememberMe) => _onLogin(email, password, rememberMe, emit),
+        login: (email, password, rememberMe) =>
+            _onLogin(email, password, rememberMe, emit),
         logout: () => _onLogout(emit),
+        sessionExpired: () => _onSessionExpired(emit),
       );
     });
   }
@@ -37,18 +41,27 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  Future<void> _onLogin(String email, String password, bool rememberMe, Emitter<AuthState> emit) async {
+  Future<void> _onLogin(String email, String password, bool rememberMe,
+      Emitter<AuthState> emit) async {
     emit(const AuthState.loading());
     try {
-      final credentials = LoginCredentials(email: email, password: password, rememberMe: rememberMe);
+      final credentials = LoginCredentials(
+          email: email, password: password, rememberMe: rememberMe);
       final tokens = await _repository.login(credentials);
       await _localDataSource.saveTokens(tokens, rememberMe: rememberMe);
       final user = _repository.parseLoginUser(tokens.toJson());
       emit(AuthState.authenticated(user));
-    } on DioException catch (e) {
-      emit(AuthState.error(mapApiException(e)));
     } catch (e) {
-      emit(AuthState.error(e.toString()));
+      // 401/403 no login é credencial errada, não sessão expirada.
+      final isAuthFailure = (e is ApiException &&
+              (e.statusCode == 401 || e.statusCode == 403)) ||
+          (e is DioException &&
+              (e.response?.statusCode == 401 || e.response?.statusCode == 403));
+      emit(AuthState.error(
+        isAuthFailure
+            ? 'Credenciais inválidas. Verifique e-mail e senha.'
+            : describeError(e),
+      ));
     }
   }
 
@@ -58,6 +71,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } catch (_) {
       // Ignore logout errors
     }
+    await _localDataSource.clearTokens();
+    emit(const AuthState.unauthenticated());
+  }
+
+  /// 401 de endpoint autenticado: o token já é inválido no servidor, então
+  /// NÃO chamamos /auth/logout — só limpamos a sessão local.
+  Future<void> _onSessionExpired(Emitter<AuthState> emit) async {
     await _localDataSource.clearTokens();
     emit(const AuthState.unauthenticated());
   }

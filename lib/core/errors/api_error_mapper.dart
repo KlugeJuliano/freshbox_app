@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import '../network/api_exception.dart';
 
 String mapApiException(DioException e) {
   // 422 Laravel: { message, errors: { campo: [msg] } } -> extrai primeira msg
@@ -12,7 +13,8 @@ String mapApiException(DioException e) {
         return firstError.first as String;
       }
     }
-    return data['message'] as String? ?? 'Dados inválidos. Verifique os campos.';
+    return data['message'] as String? ??
+        'Dados inválidos. Verifique os campos.';
   }
 
   // 401/403 - Auth errors
@@ -40,5 +42,15 @@ String mapApiException(DioException e) {
   }
 
   // Fallback
-  return e.message?.isNotEmpty == true ? e.message! : 'Erro inesperado. Tente novamente.';
+  return e.message?.isNotEmpty == true
+      ? e.message!
+      : 'Erro inesperado. Tente novamente.';
+}
+
+/// Traduz qualquer exceção lançada pelas camadas de dados para uma mensagem
+/// amigável — usada nos blocos para nunca exibir `e.toString()` cru ao usuário.
+String describeError(Object error) {
+  if (error is ApiException) return error.message;
+  if (error is DioException) return mapApiException(error);
+  return 'Erro inesperado. Tente novamente.';
 }

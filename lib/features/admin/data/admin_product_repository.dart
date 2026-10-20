@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:dio/dio.dart' show MultipartFile;
 import 'package:freshbox_app/core/network/dio_client.dart';
 import 'package:freshbox_app/features/product/domain/product.dart';
 
@@ -14,9 +17,12 @@ class AdminProductRepository {
     bool hasNext = true;
 
     while (hasNext) {
-      final response = await _client.get(_endpoint, queryParameters: {'page': page});
+      final response =
+          await _client.get(_endpoint, queryParameters: {'page': page});
       final data = response.data['data'] as List;
-      all.addAll(data.map((e) => Product.fromJson(e as Map<String, dynamic>)).toList());
+      all.addAll(data
+          .map((e) => Product.fromJson(e as Map<String, dynamic>))
+          .toList());
 
       final meta = response.data['meta'] as Map<String, dynamic>;
       hasNext = (meta['current_page'] as int) < (meta['last_page'] as int);
@@ -42,5 +48,20 @@ class AdminProductRepository {
 
   Future<void> delete(int id) async {
     await _client.delete('$_endpoint/$id');
+  }
+
+  /// POST multipart em /admin/products/{id}/image — o servidor gera as
+  /// variantes thumb/card/full e retorna o Producto atualizado.
+  Future<Product> uploadImage(int id, File imageFile) async {
+    final response = await _client.postMultipart(
+      '$_endpoint/$id/image',
+      data: {
+        'image': await MultipartFile.fromFile(
+          imageFile.path,
+          filename: 'image.jpg',
+        ),
+      },
+    );
+    return Product.fromJson(response.data['data'] as Map<String, dynamic>);
   }
 }

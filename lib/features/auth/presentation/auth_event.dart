@@ -11,4 +11,8 @@ abstract class AuthEvent with _$AuthEvent {
     required bool rememberMe,
   }) = _Login;
   const factory AuthEvent.logout() = _Logout;
+
+  /// 401 em endpoint autenticado (token revogado/expirado): limpa a sessão
+  /// local e volta para o login SEM chamar /auth/logout.
+  const factory AuthEvent.sessionExpired() = _SessionExpired;
 }

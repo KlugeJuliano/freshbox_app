@@ -5,10 +5,12 @@ import 'admin_order_list_event.dart';
 import 'admin_order_list_state.dart';
 import 'package:freshbox_app/features/admin/domain/admin_order.dart';
 import 'package:freshbox_app/features/admin/domain/admin_order_status.dart';
+import 'package:freshbox_app/core/errors/api_error_mapper.dart';
 
 class AdminOrderListBloc
     extends Bloc<AdminOrderListEvent, AdminOrderListState> {
-  AdminOrderListBloc(this._repository) : super(const AdminOrderListState.initial()) {
+  AdminOrderListBloc(this._repository)
+      : super(const AdminOrderListState.initial()) {
     on<AdminOrderListEvent>((event, emit) async {
       await event.when(
         load: (page, status) => _onLoad(emit, page: page, status: status),
@@ -38,7 +40,7 @@ class AdminOrderListBloc
         currentFilter: status,
       ));
     } catch (e) {
-      emit(AdminOrderListState.error(e.toString()));
+      emit(AdminOrderListState.error(describeError(e)));
     }
   }
 
@@ -64,7 +66,8 @@ class AdminOrderListBloc
     final currentFilter = loadedData.currentFilter;
 
     try {
-      final result = await _repository.getAll(page: nextPage, status: currentFilter);
+      final result =
+          await _repository.getAll(page: nextPage, status: currentFilter);
       final combinedOrders = [
         ...loadedData.orders,
         ...result.data,
@@ -78,7 +81,7 @@ class AdminOrderListBloc
         currentFilter: currentFilter,
       ));
     } catch (e) {
-      emit(AdminOrderListState.error(e.toString()));
+      emit(AdminOrderListState.error(describeError(e)));
     }
   }
 
@@ -90,7 +93,8 @@ class AdminOrderListBloc
 
   _LoadedData? _getLoadedData(AdminOrderListState state) {
     return state.whenOrNull<_LoadedData>(
-      loaded: (orders, hasReachedMax, currentPage, totalPages, totalItems, currentFilter) {
+      loaded: (orders, hasReachedMax, currentPage, totalPages, totalItems,
+          currentFilter) {
         return _LoadedData(
           orders: orders,
           hasReachedMax: hasReachedMax,

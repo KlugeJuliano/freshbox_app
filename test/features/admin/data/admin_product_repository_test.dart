@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:freshbox_app/core/network/dio_client.dart';
 import 'package:freshbox_app/features/admin/data/admin_product_repository.dart';
@@ -202,11 +204,12 @@ void main() {
 
     group('getById', () {
       test('returns Product on success', () async {
-        when(() => mockClient.get('/admin/products/1')).thenAnswer((_) async => Response(
-              data: tProductDetailResponse,
-              statusCode: 200,
-              requestOptions: RequestOptions(path: '/admin/products/1'),
-            ));
+        when(() => mockClient.get('/admin/products/1'))
+            .thenAnswer((_) async => Response(
+                  data: tProductDetailResponse,
+                  statusCode: 200,
+                  requestOptions: RequestOptions(path: '/admin/products/1'),
+                ));
 
         final result = await repository.getById(1);
 
@@ -224,7 +227,8 @@ void main() {
       });
 
       test('throws on error', () async {
-        when(() => mockClient.get('/admin/products/999')).thenThrow(Exception('Not found'));
+        when(() => mockClient.get('/admin/products/999'))
+            .thenThrow(Exception('Not found'));
 
         expect(
           () => repository.getById(999),
@@ -247,11 +251,12 @@ void main() {
           'is_active': true,
         };
 
-        when(() => mockClient.post('/admin/products', data: createData)).thenAnswer((_) async => Response(
-              data: tCreatedProductJson,
-              statusCode: 201,
-              requestOptions: RequestOptions(path: '/admin/products'),
-            ));
+        when(() => mockClient.post('/admin/products', data: createData))
+            .thenAnswer((_) async => Response(
+                  data: tCreatedProductJson,
+                  statusCode: 201,
+                  requestOptions: RequestOptions(path: '/admin/products'),
+                ));
 
         final result = await repository.create(createData);
 
@@ -260,7 +265,8 @@ void main() {
         expect(result.name, 'Maçã Fuji');
         expect(result.slug, 'maca-fuji');
         expect(result.price, 8.99);
-        verify(() => mockClient.post('/admin/products', data: createData)).called(1);
+        verify(() => mockClient.post('/admin/products', data: createData))
+            .called(1);
       });
 
       test('throws on error', () async {
@@ -301,11 +307,12 @@ void main() {
           },
         };
 
-        when(() => mockClient.put('/admin/products/1', data: updateData)).thenAnswer((_) async => Response(
-              data: updatedResponse,
-              statusCode: 200,
-              requestOptions: RequestOptions(path: '/admin/products/1'),
-            ));
+        when(() => mockClient.put('/admin/products/1', data: updateData))
+            .thenAnswer((_) async => Response(
+                  data: updatedResponse,
+                  statusCode: 200,
+                  requestOptions: RequestOptions(path: '/admin/products/1'),
+                ));
 
         final result = await repository.update(1, updateData);
 
@@ -313,11 +320,13 @@ void main() {
         expect(result.id, 1);
         expect(result.name, 'Banana Nanica Atualizada');
         expect(result.price, 5.49);
-        verify(() => mockClient.put('/admin/products/1', data: updateData)).called(1);
+        verify(() => mockClient.put('/admin/products/1', data: updateData))
+            .called(1);
       });
 
       test('throws on error', () async {
-        when(() => mockClient.put('/admin/products/1', data: any(named: 'data')))
+        when(() =>
+                mockClient.put('/admin/products/1', data: any(named: 'data')))
             .thenThrow(Exception('Not found'));
 
         expect(
@@ -329,21 +338,76 @@ void main() {
 
     group('delete', () {
       test('completes on success', () async {
-        when(() => mockClient.delete('/admin/products/1')).thenAnswer((_) async => Response(
-              data: {'message': 'Deleted'},
-              statusCode: 200,
-              requestOptions: RequestOptions(path: '/admin/products/1'),
-            ));
+        when(() => mockClient.delete('/admin/products/1'))
+            .thenAnswer((_) async => Response(
+                  data: {'message': 'Deleted'},
+                  statusCode: 200,
+                  requestOptions: RequestOptions(path: '/admin/products/1'),
+                ));
 
         await expectLater(repository.delete(1), completes);
         verify(() => mockClient.delete('/admin/products/1')).called(1);
       });
 
       test('throws on error', () async {
-        when(() => mockClient.delete('/admin/products/999')).thenThrow(Exception('Not found'));
+        when(() => mockClient.delete('/admin/products/999'))
+            .thenThrow(Exception('Not found'));
 
         expect(
           () => repository.delete(999),
+          throwsA(isA<Exception>()),
+        );
+      });
+    });
+
+    group('uploadImage', () {
+      final tempDir = Directory.systemTemp.createTempSync('upload_test');
+      late File imageFile;
+
+      setUpAll(() {
+        imageFile = File('${tempDir.path}/product.jpg')
+          ..writeAsBytesSync(List.filled(32, 1));
+      });
+
+      tearDownAll(() {
+        tempDir.deleteSync(recursive: true);
+      });
+
+      test('returns updated Product on success', () async {
+        final imageJson = Map.of(tProductJson)
+          ..['images'] = {
+            'thumb': '/storage/products/1/thumb.jpg',
+            'card': '/storage/products/1/card.jpg',
+            'full': '/storage/products/1/full.jpg',
+          };
+
+        when(() => mockClient.postMultipart(
+              '/admin/products/1/image',
+              data: any(named: 'data'),
+            )).thenAnswer((_) async => Response(
+              data: {'data': imageJson},
+              statusCode: 201,
+              requestOptions: RequestOptions(path: '/admin/products/1/image'),
+            ));
+
+        final result = await repository.uploadImage(1, imageFile);
+
+        expect(result.id, 1);
+        expect(result.images.thumb, '/storage/products/1/thumb.jpg');
+        verify(() => mockClient.postMultipart(
+              '/admin/products/1/image',
+              data: any(named: 'data'),
+            )).called(1);
+      });
+
+      test('throws on error', () async {
+        when(() => mockClient.postMultipart(
+              '/admin/products/1/image',
+              data: any(named: 'data'),
+            )).thenThrow(Exception('Upload failed'));
+
+        expect(
+          () => repository.uploadImage(1, imageFile),
           throwsA(isA<Exception>()),
         );
       });

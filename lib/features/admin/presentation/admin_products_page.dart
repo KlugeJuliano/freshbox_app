@@ -1,6 +1,13 @@
+import 'dart:io';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:freshbox_app/core/di/injection.dart';
+import 'package:freshbox_app/core/utils/image_picker_helper.dart';
+import 'package:freshbox_app/core/utils/slug_generator.dart';
 import 'package:freshbox_app/features/admin/presentation/admin_layout.dart';
 import 'package:freshbox_app/features/admin/presentation/blocs/admin_product_list_bloc.dart';
 import 'package:freshbox_app/features/admin/presentation/blocs/admin_product_list_event.dart';
@@ -13,8 +20,6 @@ import 'package:freshbox_app/features/admin/data/admin_category_repository.dart'
 import 'package:freshbox_app/features/product/domain/product.dart';
 import 'package:freshbox_app/features/product/domain/product_unit.dart';
 import 'package:freshbox_app/features/category/domain/category.dart';
-import 'package:freshbox_app/core/di/injection.dart';
-import 'package:freshbox_app/core/utils/slug_generator.dart';
 
 class AdminProductsPage extends StatelessWidget {
   const AdminProductsPage({super.key, this.productIdToEdit});
@@ -26,7 +31,8 @@ class AdminProductsPage extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (_) => getIt<AdminProductListBloc>()..add(const AdminProductListEvent.load()),
+          create: (_) => getIt<AdminProductListBloc>()
+            ..add(const AdminProductListEvent.load()),
         ),
         BlocProvider(
           create: (_) => getIt<AdminProductFormBloc>(),
@@ -58,7 +64,8 @@ class _ProductsViewState extends State<_ProductsView> {
     _loadCategories();
     if (widget.productIdToEdit != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showEditDialog(context.read<AdminProductFormBloc>(), widget.productIdToEdit!);
+        _showEditDialog(
+            context.read<AdminProductFormBloc>(), widget.productIdToEdit!);
       });
     }
   }
@@ -82,7 +89,13 @@ class _ProductsViewState extends State<_ProductsView> {
   String _getCategoryName(int categoryId) {
     final category = _categories.firstWhere(
       (c) => c.id == categoryId,
-      orElse: () => Category(id: categoryId, name: 'Desconhecida', slug: '', sortOrder: 0, isActive: false, productsCount: 0),
+      orElse: () => Category(
+          id: categoryId,
+          name: 'Desconhecida',
+          slug: '',
+          sortOrder: 0,
+          isActive: false,
+          productsCount: 0),
     );
     return category.name;
   }
@@ -96,7 +109,9 @@ class _ProductsViewState extends State<_ProductsView> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(message), backgroundColor: Colors.green),
             );
-            context.read<AdminProductListBloc>().add(const AdminProductListEvent.refresh());
+            context
+                .read<AdminProductListBloc>()
+                .add(const AdminProductListEvent.refresh());
             context.go('/admin/products');
           },
           error: (message) {
@@ -135,12 +150,15 @@ class _ProductsViewState extends State<_ProductsView> {
             ElevatedButton.icon(
               icon: const Icon(Icons.add, size: 18),
               label: const Text('Novo Produto'),
-              onPressed: () => _showCreateDialog(context.read<AdminProductFormBloc>()),
+              onPressed: () =>
+                  _showCreateDialog(context.read<AdminProductFormBloc>()),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green.shade600,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
               ),
             ),
           ],
@@ -174,84 +192,177 @@ class _ProductsViewState extends State<_ProductsView> {
                       child: Center(child: CircularProgressIndicator()),
                     )
                   : SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    headingRowColor: WidgetStatePropertyAll(Colors.grey.shade50),
-                    headingRowHeight: 48,
-                    dataRowMinHeight: 52,
-                    columnSpacing: 24,
-                    horizontalMargin: 16,
-                    showCheckboxColumn: false,
-                    columns: const [
-                      DataColumn(label: Text('Nome')),
-                      DataColumn(label: Text('Slug')),
-                      DataColumn(label: Text('Preço')),
-                      DataColumn(label: Text('Promo')),
-                      DataColumn(label: Text('Unidade')),
-                      DataColumn(label: Text('Categoria')),
-                      DataColumn(label: Text('Disponível')),
-                      DataColumn(label: Text('Destaque')),
-                      DataColumn(label: Text('Status')),
-                      DataColumn(label: Text('Ações'), numeric: true),
-                    ],
-                    rows: products.map((product) {
-                      return DataRow(
-                        cells: [
-                          DataCell(
-                            Text(
-                              product.name,
-                              style: const TextStyle(fontWeight: FontWeight.w500),
-                            ),
-                          ),
-                          DataCell(Text(product.slug)),
-                          DataCell(Text('R\$ ${product.price.toStringAsFixed(2)}')),
-                          DataCell(
-                            product.promoPrice != null
-                                ? Text(
-                                    'R\$ ${product.promoPrice!.toStringAsFixed(2)}',
-                                    style: TextStyle(
-                                      color: Colors.red.shade700,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  )
-                                : const Text('-'),
-                          ),
-                          DataCell(Text(product.unitLabel)),
-                          DataCell(Text(_getCategoryName(product.categoryId))),
-                          DataCell(_buildStatusChip(product.isAvailable)),
-                          DataCell(_buildStatusChip(product.isFeatured)),
-                          DataCell(_buildStatusChip(product.isOnPromo)),
-                          DataCell(_buildStatusChip(product.isActive)),
-                          DataCell(
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: Icon(Icons.edit, size: 18, color: Colors.orange.shade600),
-                                  onPressed: () => _showEditDialog(
-                                    context.read<AdminProductFormBloc>(),
-                                    product.id,
-                                  ),
-                                  tooltip: 'Editar',
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
-                                ),
-                                IconButton(
-                                  icon: Icon(Icons.delete_outline, size: 18, color: Colors.red.shade600),
-                                  onPressed: () => _confirmDelete(context, product.id, product.name),
-                                  tooltip: 'Excluir',
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
-                                ),
-                              ],
-                            ),
-                          ),
+                      scrollDirection: Axis.horizontal,
+                      child: DataTable(
+                        headingRowColor:
+                            WidgetStatePropertyAll(Colors.grey.shade50),
+                        headingRowHeight: 48,
+                        dataRowMinHeight: 52,
+                        columnSpacing: 24,
+                        horizontalMargin: 16,
+                        showCheckboxColumn: false,
+                        columns: const [
+                          DataColumn(label: Text('Nome')),
+                          DataColumn(label: Text('Slug')),
+                          DataColumn(label: Text('Preço')),
+                          DataColumn(label: Text('Promo')),
+                          DataColumn(label: Text('Unidade')),
+                          DataColumn(label: Text('Categoria')),
+                          DataColumn(label: Text('Disponível')),
+                          DataColumn(label: Text('Destaque')),
+                          DataColumn(label: Text('Status')),
+                          DataColumn(label: Text('Ações'), numeric: true),
                         ],
-                      );
-                    }).toList(),
-                  ),
-                ),
+                        rows: products.map((product) {
+                          return DataRow(
+                            cells: [
+                              DataCell(
+                                Text(
+                                  product.name,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w500),
+                                ),
+                              ),
+                              DataCell(Text(product.slug)),
+                              DataCell(Text(
+                                  'R\$ ${product.price.toStringAsFixed(2)}')),
+                              DataCell(
+                                product.promoPrice != null
+                                    ? Text(
+                                        'R\$ ${product.promoPrice!.toStringAsFixed(2)}',
+                                        style: TextStyle(
+                                          color: Colors.red.shade700,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      )
+                                    : const Text('-'),
+                              ),
+                              DataCell(Text(product.unitLabel)),
+                              DataCell(
+                                  Text(_getCategoryName(product.categoryId))),
+                              DataCell(_buildStatusChip(product.isAvailable)),
+                              DataCell(_buildStatusChip(product.isFeatured)),
+                              DataCell(_buildStatusChip(product.isOnPromo)),
+                              DataCell(_buildStatusChip(product.isActive)),
+                              DataCell(
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(Icons.edit,
+                                          size: 18,
+                                          color: Colors.orange.shade600),
+                                      onPressed: () => _showEditDialog(
+                                        context.read<AdminProductFormBloc>(),
+                                        product.id,
+                                      ),
+                                      tooltip: 'Editar',
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                    ),
+                                    IconButton(
+                                      icon: Icon(Icons.delete_outline,
+                                          size: 18, color: Colors.red.shade600),
+                                      onPressed: () => _confirmDelete(
+                                          context, product.id, product.name),
+                                      tooltip: 'Excluir',
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          );
+                        }).toList(),
+                      ),
+                    ),
         ),
+      ],
+    );
+  }
+
+  /// Preview + botões Galeria/Câmera usados nos dialogs de produto.
+  /// A compressão local segue o pipeline do README (~1200px, JPEG 78%);
+  /// o servidor gera thumb/card/full a partir do upload multipart.
+  Widget _buildProductImageSection(
+    BuildContext context, {
+    File? imageFile,
+    String? fallbackUrl,
+    required void Function(File?) onImagePicked,
+  }) {
+    final Widget preview;
+    if (imageFile != null) {
+      preview = Image.file(imageFile, width: 72, height: 72, fit: BoxFit.cover);
+    } else if (fallbackUrl != null && fallbackUrl.isNotEmpty) {
+      preview = CachedNetworkImage(
+        imageUrl: fallbackUrl,
+        width: 72,
+        height: 72,
+        fit: BoxFit.cover,
+      );
+    } else {
+      preview = Container(
+        width: 72,
+        height: 72,
+        color: Colors.grey.shade200,
+        child: const Icon(Icons.image_outlined),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Imagem do produto',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: preview,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final picked = await ImagePickerHelper().pickAndCompress(
+                        source: ImageSource.gallery,
+                      );
+                      onImagePicked(picked);
+                    },
+                    icon: const Icon(Icons.photo_library_outlined, size: 18),
+                    label: const Text('Galeria'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final picked = await ImagePickerHelper().pickAndCompress(
+                        source: ImageSource.camera,
+                      );
+                      onImagePicked(picked);
+                    },
+                    icon: const Icon(Icons.photo_camera_outlined, size: 18),
+                    label: const Text('Câmera'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        if (imageFile == null && fallbackUrl != null && fallbackUrl.isNotEmpty)
+          const Padding(
+            padding: EdgeInsets.only(top: 4),
+            child: Text(
+              'Selecione um novo arquivo para substituir a imagem atual',
+              style: TextStyle(fontSize: 12),
+            ),
+          ),
       ],
     );
   }
@@ -284,7 +395,6 @@ class _ProductsViewState extends State<_ProductsView> {
     final descriptionController = TextEditingController();
     final priceController = TextEditingController();
     final promoPriceController = TextEditingController();
-    final mainImageUrlController = TextEditingController();
     DateTime? promoEndsAt;
     ProductUnit selectedUnit = ProductUnit.kg;
     int? selectedCategoryId;
@@ -293,6 +403,7 @@ class _ProductsViewState extends State<_ProductsView> {
     bool isOnPromo = false;
     bool isActive = true;
     bool isSlugAutoGenerated = true;
+    File? imageFile;
 
     if (!mounted) return;
 
@@ -324,9 +435,10 @@ class _ProductsViewState extends State<_ProductsView> {
                             children: [
                               const SizedBox(height: 16),
                               TextFormField(
-                                controller: TextEditingController(text: promoEndsAt != null
-                                    ? '${promoEndsAt!.day.toString().padLeft(2, '0')}/${promoEndsAt!.month.toString().padLeft(2, '0')}/${promoEndsAt!.year}'
-                                    : ''),
+                                controller: TextEditingController(
+                                    text: promoEndsAt != null
+                                        ? '${promoEndsAt!.day.toString().padLeft(2, '0')}/${promoEndsAt!.month.toString().padLeft(2, '0')}/${promoEndsAt!.year}'
+                                        : ''),
                                 readOnly: true,
                                 decoration: const InputDecoration(
                                   labelText: 'Fim da Promoção',
@@ -335,9 +447,12 @@ class _ProductsViewState extends State<_ProductsView> {
                                 onTap: () async {
                                   final date = await showDatePicker(
                                     context: context,
-                                    initialDate: promoEndsAt ?? DateTime.now().add(const Duration(days: 7)),
+                                    initialDate: promoEndsAt ??
+                                        DateTime.now()
+                                            .add(const Duration(days: 7)),
                                     firstDate: DateTime.now(),
-                                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                                    lastDate: DateTime.now()
+                                        .add(const Duration(days: 365)),
                                   );
                                   if (date != null && mounted) {
                                     setDialogState(() => promoEndsAt = date);
@@ -365,11 +480,15 @@ class _ProductsViewState extends State<_ProductsView> {
                                     hintText: 'Ex: Banana Nanica',
                                   ),
                                   validator: (value) =>
-                                      value?.trim().isEmpty ?? true ? 'Nome é obrigatório' : null,
+                                      value?.trim().isEmpty ?? true
+                                          ? 'Nome é obrigatório'
+                                          : null,
                                   onChanged: (value) {
-                                    if (slugController.text.isEmpty || isSlugAutoGenerated) {
+                                    if (slugController.text.isEmpty ||
+                                        isSlugAutoGenerated) {
                                       setDialogState(() {
-                                        slugController.text = generateSlug(value);
+                                        slugController.text =
+                                            generateSlug(value);
                                       });
                                     }
                                   },
@@ -382,8 +501,11 @@ class _ProductsViewState extends State<_ProductsView> {
                                     hintText: 'gerado automaticamente',
                                   ),
                                   validator: (value) =>
-                                      value?.trim().isEmpty ?? true ? 'Slug é obrigatório' : null,
-                                  onChanged: (_) => setDialogState(() => isSlugAutoGenerated = false),
+                                      value?.trim().isEmpty ?? true
+                                          ? 'Slug é obrigatório'
+                                          : null,
+                                  onChanged: (_) => setDialogState(
+                                      () => isSlugAutoGenerated = false),
                                 ),
                                 const SizedBox(height: 16),
                                 TextFormField(
@@ -404,11 +526,18 @@ class _ProductsViewState extends State<_ProductsView> {
                                           labelText: 'Preço *',
                                           hintText: '0,00',
                                         ),
-                                        keyboardType: TextInputType.numberWithOptions(decimal: true),
+                                        keyboardType:
+                                            TextInputType.numberWithOptions(
+                                                decimal: true),
                                         validator: (value) {
-                                          if (value?.trim().isEmpty ?? true) return 'Preço é obrigatório';
-                                          final price = double.tryParse(value!.replaceAll(',', '.'));
-                                          if (price == null || price <= 0) return 'Preço deve ser maior que zero';
+                                          if (value?.trim().isEmpty ?? true) {
+                                            return 'Preço é obrigatório';
+                                          }
+                                          final price = double.tryParse(
+                                              value!.replaceAll(',', '.'));
+                                          if (price == null || price <= 0) {
+                                            return 'Preço deve ser maior que zero';
+                                          }
                                           return null;
                                         },
                                       ),
@@ -421,11 +550,15 @@ class _ProductsViewState extends State<_ProductsView> {
                                           labelText: 'Preço Promo',
                                           hintText: '0,00',
                                         ),
-                                        keyboardType: TextInputType.numberWithOptions(decimal: true),
+                                        keyboardType:
+                                            TextInputType.numberWithOptions(
+                                                decimal: true),
                                         onChanged: (value) {
-                                          final price = double.tryParse(value.replaceAll(',', '.'));
+                                          final price = double.tryParse(
+                                              value.replaceAll(',', '.'));
                                           setDialogState(() {
-                                            isOnPromo = price != null && price > 0;
+                                            isOnPromo =
+                                                price != null && price > 0;
                                           });
                                         },
                                       ),
@@ -436,23 +569,30 @@ class _ProductsViewState extends State<_ProductsView> {
                                 Row(
                                   children: [
                                     Expanded(
-                                      child: DropdownButtonFormField<ProductUnit>(
+                                      child:
+                                          DropdownButtonFormField<ProductUnit>(
                                         initialValue: selectedUnit,
                                         decoration: const InputDecoration(
                                           labelText: 'Unidade *',
                                         ),
-                                        items: ProductUnit.values.map((unit) {
+                                        items: ProductUnit.values
+                                            .where(
+                                                (u) => u != ProductUnit.unknown)
+                                            .map((unit) {
                                           return DropdownMenuItem<ProductUnit>(
                                             value: unit,
                                             child: Text(unit.label),
                                           );
                                         }).toList(),
-                                        onChanged: (value) => setDialogState(() => selectedUnit = value!),
-                                        validator: (value) => value == null ? 'Unidade é obrigatória' : null,
+                                        onChanged: (value) => setDialogState(
+                                            () => selectedUnit = value!),
+                                        validator: (value) => value == null
+                                            ? 'Unidade é obrigatória'
+                                            : null,
                                       ),
                                     ),
                                     const SizedBox(width: 16),
-Expanded(
+                                    Expanded(
                                       child: DropdownButtonFormField<int>(
                                         initialValue: selectedCategoryId,
                                         decoration: const InputDecoration(
@@ -464,8 +604,11 @@ Expanded(
                                             child: Text(c.name),
                                           );
                                         }).toList(),
-                                        onChanged: (value) => setDialogState(() => selectedCategoryId = value),
-                                        validator: (value) => value == null ? 'Categoria é obrigatória' : null,
+                                        onChanged: (value) => setDialogState(
+                                            () => selectedCategoryId = value),
+                                        validator: (value) => value == null
+                                            ? 'Categoria é obrigatória'
+                                            : null,
                                       ),
                                     ),
                                   ],
@@ -474,13 +617,15 @@ Expanded(
                                 SwitchListTile(
                                   title: const Text('Dispon\u00edvel'),
                                   value: isAvailable,
-                                  onChanged: (value) => setDialogState(() => isAvailable = value),
+                                  onChanged: (value) =>
+                                      setDialogState(() => isAvailable = value),
                                   contentPadding: EdgeInsets.zero,
                                 ),
                                 SwitchListTile(
                                   title: const Text('Destaque'),
                                   value: isFeatured,
-                                  onChanged: (value) => setDialogState(() => isFeatured = value),
+                                  onChanged: (value) =>
+                                      setDialogState(() => isFeatured = value),
                                   contentPadding: EdgeInsets.zero,
                                 ),
                                 SwitchListTile(
@@ -498,41 +643,51 @@ Expanded(
                                 SwitchListTile(
                                   title: const Text('Ativo'),
                                   value: isActive,
-                                  onChanged: (value) => setDialogState(() => isActive = value),
+                                  onChanged: (value) =>
+                                      setDialogState(() => isActive = value),
                                   contentPadding: EdgeInsets.zero,
                                 ),
                                 promoEndsAtField,
                                 const SizedBox(height: 16),
-                                TextFormField(
-                                  controller: mainImageUrlController,
-                                  decoration: const InputDecoration(
-                                    labelText: 'URL da Imagem Principal',
-                                    hintText: 'https://exemplo.com/imagem.png',
-                                  ),
+                                _buildProductImageSection(
+                                  context,
+                                  imageFile: imageFile,
+                                  onImagePicked: (picked) =>
+                                      setDialogState(() => imageFile = picked),
                                 ),
-],
+                              ],
                             ),
                           ),
                         ),
-                        ),
-                        actions: [
+                      ),
+                      actions: [
                         TextButton(
-                          onPressed: state.maybeWhen(submitting: () => true, orElse: () => false)
+                          onPressed: state.maybeWhen(
+                                  submitting: () => true, orElse: () => false)
                               ? null
                               : () => Navigator.pop(context),
                           child: const Text('Cancelar'),
                         ),
                         ElevatedButton(
-                          onPressed: state.maybeWhen(submitting: () => true, orElse: () => false)
+                          onPressed: state.maybeWhen(
+                                  submitting: () => true, orElse: () => false)
                               ? null
                               : () {
-                                  if (formKey.currentState?.validate() ?? false) {
+                                  if (formKey.currentState?.validate() ??
+                                      false) {
                                     final data = <String, dynamic>{
                                       'name': nameController.text.trim(),
                                       'slug': slugController.text.trim(),
-                                      'description': descriptionController.text.trim().isEmpty ? null : descriptionController.text.trim(),
-                                      'price': double.tryParse(priceController.text.replaceAll(',', '.')) ?? 0,
-                                      'unit': selectedUnit.name,
+                                      'description': descriptionController.text
+                                              .trim()
+                                              .isEmpty
+                                          ? null
+                                          : descriptionController.text.trim(),
+                                      'price': double.tryParse(priceController
+                                              .text
+                                              .replaceAll(',', '.')) ??
+                                          0,
+                                      'unit': selectedUnit.apiValue,
                                       'category_id': selectedCategoryId,
                                       'is_available': isAvailable,
                                       'is_featured': isFeatured,
@@ -540,21 +695,22 @@ Expanded(
                                       'is_active': isActive,
                                     };
                                     if (promoPriceController.text.isNotEmpty) {
-                                      final promoPrice = double.tryParse(promoPriceController.text.replaceAll(',', '.'));
-                                      if (promoPrice != null && promoPrice > 0) {
+                                      final promoPrice = double.tryParse(
+                                          promoPriceController.text
+                                              .replaceAll(',', '.'));
+                                      if (promoPrice != null &&
+                                          promoPrice > 0) {
                                         data['promo_price'] = promoPrice;
                                       }
                                     }
                                     if (promoEndsAt != null) {
-                                      data['promo_ends_at'] = promoEndsAt!.toIso8601String();
+                                      data['promo_ends_at'] =
+                                          promoEndsAt!.toIso8601String();
                                     }
-                                    // Preencher as 3 variantes de imagem com a mesma URL
-                                    if (mainImageUrlController.text.trim().isNotEmpty == true) {
-                                      data['thumb_url'] = mainImageUrlController.text.trim();
-                                      data['card_url'] = mainImageUrlController.text.trim();
-                                      data['full_url'] = mainImageUrlController.text.trim();
-                                    }
-                                    formBloc.add(AdminProductFormEvent.create(data));
+                                    formBloc.add(AdminProductFormEvent.create(
+                                      data,
+                                      image: imageFile,
+                                    ));
                                   }
                                 },
                           style: ElevatedButton.styleFrom(
@@ -567,7 +723,8 @@ Expanded(
                               height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             ),
                             orElse: () => const Text('Criar'),
@@ -592,7 +749,6 @@ Expanded(
     final descriptionController = TextEditingController();
     final priceController = TextEditingController();
     final promoPriceController = TextEditingController();
-    final mainImageUrlController = TextEditingController();
     DateTime? promoEndsAt;
     ProductUnit selectedUnit = ProductUnit.kg;
     int? selectedCategoryId;
@@ -602,6 +758,8 @@ Expanded(
     bool isActive = true;
     bool isSlugAutoGenerated = true;
     bool isLoading = true;
+    File? imageFile;
+    Product? currentProduct;
 
     // Carregar produto e categorias
     Future.wait([
@@ -609,13 +767,16 @@ Expanded(
       getIt<AdminCategoryRepository>().getAll(),
     ]).then((results) {
       final product = results[0] as Product;
+      currentProduct = product;
 
       nameController.text = product.name;
       slugController.text = product.slug;
       descriptionController.text = product.description ?? '';
-      priceController.text = product.price.toStringAsFixed(2).replaceAll('.', ',');
+      priceController.text =
+          product.price.toStringAsFixed(2).replaceAll('.', ',');
       if (product.promoPrice != null) {
-        promoPriceController.text = product.promoPrice!.toStringAsFixed(2).replaceAll('.', ',');
+        promoPriceController.text =
+            product.promoPrice!.toStringAsFixed(2).replaceAll('.', ',');
       }
       if (product.promoEndsAt != null) {
         promoEndsAt = product.promoEndsAt!;
@@ -626,15 +787,13 @@ Expanded(
       isFeatured = product.isFeatured;
       isOnPromo = product.isOnPromo;
       isActive = product.isActive;
-      final fullImage = product.images.full;
-      if (fullImage != null && fullImage.isNotEmpty) {
-        mainImageUrlController.text = fullImage;
-      }
       isLoading = false;
     }).catchError((e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao carregar produto: $e'), backgroundColor: Colors.red),
+        SnackBar(
+            content: Text('Erro ao carregar produto: $e'),
+            backgroundColor: Colors.red),
       );
       Navigator.pop(context);
     });
@@ -643,9 +802,9 @@ Expanded(
       context: context,
       builder: (context) => BlocProvider.value(
         value: formBloc,
-child: StatefulBuilder(
-            builder: (context, setDialogState) {
-              return BlocConsumer<AdminProductFormBloc, AdminProductFormState>(
+        child: StatefulBuilder(
+          builder: (context, setDialogState) {
+            return BlocConsumer<AdminProductFormBloc, AdminProductFormState>(
               listener: (context, state) {},
               builder: (context, state) {
                 if (isLoading) {
@@ -675,9 +834,10 @@ child: StatefulBuilder(
                             children: [
                               const SizedBox(height: 16),
                               TextFormField(
-                                controller: TextEditingController(text: promoEndsAt != null
-                                    ? '${promoEndsAt!.day.toString().padLeft(2, '0')}/${promoEndsAt!.month.toString().padLeft(2, '0')}/${promoEndsAt!.year}'
-                                    : ''),
+                                controller: TextEditingController(
+                                    text: promoEndsAt != null
+                                        ? '${promoEndsAt!.day.toString().padLeft(2, '0')}/${promoEndsAt!.month.toString().padLeft(2, '0')}/${promoEndsAt!.year}'
+                                        : ''),
                                 readOnly: true,
                                 decoration: const InputDecoration(
                                   labelText: 'Fim da Promoção',
@@ -686,9 +846,12 @@ child: StatefulBuilder(
                                 onTap: () async {
                                   final date = await showDatePicker(
                                     context: context,
-                                    initialDate: promoEndsAt ?? DateTime.now().add(const Duration(days: 7)),
+                                    initialDate: promoEndsAt ??
+                                        DateTime.now()
+                                            .add(const Duration(days: 7)),
                                     firstDate: DateTime.now(),
-                                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                                    lastDate: DateTime.now()
+                                        .add(const Duration(days: 365)),
                                   );
                                   if (date != null && mounted) {
                                     setDialogState(() => promoEndsAt = date);
@@ -716,11 +879,15 @@ child: StatefulBuilder(
                                     hintText: 'Ex: Banana Nanica',
                                   ),
                                   validator: (value) =>
-                                      value?.trim().isEmpty ?? true ? 'Nome é obrigatório' : null,
+                                      value?.trim().isEmpty ?? true
+                                          ? 'Nome é obrigatório'
+                                          : null,
                                   onChanged: (value) {
-                                    if (slugController.text.isEmpty || isSlugAutoGenerated) {
+                                    if (slugController.text.isEmpty ||
+                                        isSlugAutoGenerated) {
                                       setDialogState(() {
-                                        slugController.text = generateSlug(value);
+                                        slugController.text =
+                                            generateSlug(value);
                                       });
                                     }
                                   },
@@ -733,8 +900,11 @@ child: StatefulBuilder(
                                     hintText: 'gerado automaticamente',
                                   ),
                                   validator: (value) =>
-                                      value?.trim().isEmpty ?? true ? 'Slug é obrigatório' : null,
-                                  onChanged: (_) => setDialogState(() => isSlugAutoGenerated = false),
+                                      value?.trim().isEmpty ?? true
+                                          ? 'Slug é obrigatório'
+                                          : null,
+                                  onChanged: (_) => setDialogState(
+                                      () => isSlugAutoGenerated = false),
                                 ),
                                 const SizedBox(height: 16),
                                 TextFormField(
@@ -755,11 +925,18 @@ child: StatefulBuilder(
                                           labelText: 'Preço *',
                                           hintText: '0,00',
                                         ),
-                                        keyboardType: TextInputType.numberWithOptions(decimal: true),
+                                        keyboardType:
+                                            TextInputType.numberWithOptions(
+                                                decimal: true),
                                         validator: (value) {
-                                          if (value?.trim().isEmpty ?? true) return 'Preço é obrigatório';
-                                          final price = double.tryParse(value!.replaceAll(',', '.'));
-                                          if (price == null || price <= 0) return 'Preço deve ser maior que zero';
+                                          if (value?.trim().isEmpty ?? true) {
+                                            return 'Preço é obrigatório';
+                                          }
+                                          final price = double.tryParse(
+                                              value!.replaceAll(',', '.'));
+                                          if (price == null || price <= 0) {
+                                            return 'Preço deve ser maior que zero';
+                                          }
                                           return null;
                                         },
                                       ),
@@ -772,11 +949,15 @@ child: StatefulBuilder(
                                           labelText: 'Preço Promo',
                                           hintText: '0,00',
                                         ),
-                                        keyboardType: TextInputType.numberWithOptions(decimal: true),
+                                        keyboardType:
+                                            TextInputType.numberWithOptions(
+                                                decimal: true),
                                         onChanged: (value) {
-                                          final price = double.tryParse(value.replaceAll(',', '.'));
+                                          final price = double.tryParse(
+                                              value.replaceAll(',', '.'));
                                           setDialogState(() {
-                                            isOnPromo = price != null && price > 0;
+                                            isOnPromo =
+                                                price != null && price > 0;
                                           });
                                         },
                                       ),
@@ -787,23 +968,30 @@ child: StatefulBuilder(
                                 Row(
                                   children: [
                                     Expanded(
-                                      child: DropdownButtonFormField<ProductUnit>(
+                                      child:
+                                          DropdownButtonFormField<ProductUnit>(
                                         initialValue: selectedUnit,
                                         decoration: const InputDecoration(
                                           labelText: 'Unidade *',
                                         ),
-                                        items: ProductUnit.values.map((unit) {
+                                        items: ProductUnit.values
+                                            .where(
+                                                (u) => u != ProductUnit.unknown)
+                                            .map((unit) {
                                           return DropdownMenuItem<ProductUnit>(
                                             value: unit,
                                             child: Text(unit.label),
                                           );
                                         }).toList(),
-                                        onChanged: (value) => setDialogState(() => selectedUnit = value!),
-                                        validator: (value) => value == null ? 'Unidade é obrigatória' : null,
+                                        onChanged: (value) => setDialogState(
+                                            () => selectedUnit = value!),
+                                        validator: (value) => value == null
+                                            ? 'Unidade é obrigatória'
+                                            : null,
                                       ),
                                     ),
                                     const SizedBox(width: 16),
-Expanded(
+                                    Expanded(
                                       child: DropdownButtonFormField<int>(
                                         initialValue: selectedCategoryId,
                                         decoration: const InputDecoration(
@@ -815,8 +1003,11 @@ Expanded(
                                             child: Text(c.name),
                                           );
                                         }).toList(),
-                                        onChanged: (value) => setDialogState(() => selectedCategoryId = value),
-                                        validator: (value) => value == null ? 'Categoria é obrigatória' : null,
+                                        onChanged: (value) => setDialogState(
+                                            () => selectedCategoryId = value),
+                                        validator: (value) => value == null
+                                            ? 'Categoria é obrigatória'
+                                            : null,
                                       ),
                                     ),
                                   ],
@@ -825,13 +1016,15 @@ Expanded(
                                 SwitchListTile(
                                   title: const Text('Dispon\u00edvel'),
                                   value: isAvailable,
-                                  onChanged: (value) => setDialogState(() => isAvailable = value),
+                                  onChanged: (value) =>
+                                      setDialogState(() => isAvailable = value),
                                   contentPadding: EdgeInsets.zero,
                                 ),
                                 SwitchListTile(
                                   title: const Text('Destaque'),
                                   value: isFeatured,
-                                  onChanged: (value) => setDialogState(() => isFeatured = value),
+                                  onChanged: (value) =>
+                                      setDialogState(() => isFeatured = value),
                                   contentPadding: EdgeInsets.zero,
                                 ),
                                 SwitchListTile(
@@ -849,41 +1042,52 @@ Expanded(
                                 SwitchListTile(
                                   title: const Text('Ativo'),
                                   value: isActive,
-                                  onChanged: (value) => setDialogState(() => isActive = value),
+                                  onChanged: (value) =>
+                                      setDialogState(() => isActive = value),
                                   contentPadding: EdgeInsets.zero,
                                 ),
                                 promoEndsAtField,
                                 const SizedBox(height: 16),
-                                TextFormField(
-                                  controller: mainImageUrlController,
-                                  decoration: const InputDecoration(
-                                    labelText: 'URL da Imagem Principal',
-                                    hintText: 'https://exemplo.com/imagem.png',
-                                  ),
+                                _buildProductImageSection(
+                                  context,
+                                  imageFile: imageFile,
+                                  fallbackUrl: currentProduct?.images.thumb,
+                                  onImagePicked: (picked) =>
+                                      setDialogState(() => imageFile = picked),
                                 ),
-],
+                              ],
                             ),
                           ),
                         ),
-                        ),
-                        actions: [
+                      ),
+                      actions: [
                         TextButton(
-                          onPressed: state.maybeWhen(submitting: () => true, orElse: () => false)
+                          onPressed: state.maybeWhen(
+                                  submitting: () => true, orElse: () => false)
                               ? null
                               : () => Navigator.pop(context),
                           child: const Text('Cancelar'),
                         ),
                         ElevatedButton(
-                          onPressed: state.maybeWhen(submitting: () => true, orElse: () => false)
+                          onPressed: state.maybeWhen(
+                                  submitting: () => true, orElse: () => false)
                               ? null
                               : () {
-                                  if (formKey.currentState?.validate() ?? false) {
+                                  if (formKey.currentState?.validate() ??
+                                      false) {
                                     final data = <String, dynamic>{
                                       'name': nameController.text.trim(),
                                       'slug': slugController.text.trim(),
-                                      'description': descriptionController.text.trim().isEmpty ? null : descriptionController.text.trim(),
-                                      'price': double.tryParse(priceController.text.replaceAll(',', '.')) ?? 0,
-                                      'unit': selectedUnit.name,
+                                      'description': descriptionController.text
+                                              .trim()
+                                              .isEmpty
+                                          ? null
+                                          : descriptionController.text.trim(),
+                                      'price': double.tryParse(priceController
+                                              .text
+                                              .replaceAll(',', '.')) ??
+                                          0,
+                                      'unit': selectedUnit.apiValue,
                                       'category_id': selectedCategoryId,
                                       'is_available': isAvailable,
                                       'is_featured': isFeatured,
@@ -891,21 +1095,23 @@ Expanded(
                                       'is_active': isActive,
                                     };
                                     if (promoPriceController.text.isNotEmpty) {
-                                      final promoPrice = double.tryParse(promoPriceController.text.replaceAll(',', '.'));
-                                      if (promoPrice != null && promoPrice > 0) {
+                                      final promoPrice = double.tryParse(
+                                          promoPriceController.text
+                                              .replaceAll(',', '.'));
+                                      if (promoPrice != null &&
+                                          promoPrice > 0) {
                                         data['promo_price'] = promoPrice;
                                       }
                                     }
                                     if (promoEndsAt != null) {
-                                      data['promo_ends_at'] = promoEndsAt!.toIso8601String();
+                                      data['promo_ends_at'] =
+                                          promoEndsAt!.toIso8601String();
                                     }
-                                    // Preencher as 3 variantes de imagem com a mesma URL
-                                    if (mainImageUrlController.text.trim().isNotEmpty == true) {
-                                      data['thumb_url'] = mainImageUrlController.text.trim();
-                                      data['card_url'] = mainImageUrlController.text.trim();
-                                      data['full_url'] = mainImageUrlController.text.trim();
-                                    }
-                                    formBloc.add(AdminProductFormEvent.update(id, data));
+                                    formBloc.add(AdminProductFormEvent.update(
+                                      id,
+                                      data,
+                                      image: imageFile,
+                                    ));
                                   }
                                 },
                           style: ElevatedButton.styleFrom(
@@ -918,7 +1124,8 @@ Expanded(
                               height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             ),
                             orElse: () => const Text('Salvar'),
@@ -950,7 +1157,9 @@ Expanded(
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              context.read<AdminProductFormBloc>().add(AdminProductFormEvent.delete(id));
+              context
+                  .read<AdminProductFormBloc>()
+                  .add(AdminProductFormEvent.delete(id));
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Excluir'),

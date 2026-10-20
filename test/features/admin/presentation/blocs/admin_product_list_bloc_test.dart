@@ -1,3 +1,4 @@
+import 'package:freshbox_app/core/network/api_exception.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:freshbox_app/features/admin/data/admin_product_repository.dart';
 import 'package:freshbox_app/features/admin/presentation/blocs/admin_product_list_bloc.dart';
@@ -8,7 +9,8 @@ import 'package:freshbox_app/features/product/domain/product_image.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-class _MockAdminProductRepository extends Mock implements AdminProductRepository {}
+class _MockAdminProductRepository extends Mock
+    implements AdminProductRepository {}
 
 const tProduct = Product(
   id: 1,
@@ -64,14 +66,17 @@ void main() {
       blocTest<AdminProductListBloc, AdminProductListState>(
         'emits [loading, loaded] when successful',
         build: () {
-          when(() => mockRepository.getAll()).thenAnswer((_) async => [tProduct, tProduct2]);
+          when(() => mockRepository.getAll())
+              .thenAnswer((_) async => [tProduct, tProduct2]);
           return bloc;
         },
         act: (bloc) => bloc.add(const AdminProductListEvent.load()),
         expect: () => [
           const AdminProductListState.loading(),
           predicate<AdminProductListState>((s) => s.maybeWhen(
-                loaded: (products) => products.length == 2 && products.first.name == 'Banana Nanica',
+                loaded: (products) =>
+                    products.length == 2 &&
+                    products.first.name == 'Banana Nanica',
                 orElse: () => false,
               )),
         ],
@@ -80,7 +85,8 @@ void main() {
       blocTest<AdminProductListBloc, AdminProductListState>(
         'emits [loading, error] when repository throws',
         build: () {
-          when(() => mockRepository.getAll()).thenThrow(Exception('Network error'));
+          when(() => mockRepository.getAll()).thenThrow(
+              ApiException(message: 'Network error', statusCode: 422));
           return bloc;
         },
         act: (bloc) => bloc.add(const AdminProductListEvent.load()),
@@ -96,7 +102,8 @@ void main() {
       blocTest<AdminProductListBloc, AdminProductListState>(
         'emits [loading, loaded] with empty list when no products',
         build: () {
-          when(() => mockRepository.getAll()).thenAnswer((_) async => <Product>[]);
+          when(() => mockRepository.getAll())
+              .thenAnswer((_) async => <Product>[]);
           return bloc;
         },
         act: (bloc) => bloc.add(const AdminProductListEvent.load()),
@@ -114,7 +121,8 @@ void main() {
       blocTest<AdminProductListBloc, AdminProductListState>(
         'emits [loading, loaded] when successful (same as load)',
         build: () {
-          when(() => mockRepository.getAll()).thenAnswer((_) async => [tProduct]);
+          when(() => mockRepository.getAll())
+              .thenAnswer((_) async => [tProduct]);
           return bloc;
         },
         act: (bloc) => bloc.add(const AdminProductListEvent.refresh()),
@@ -130,7 +138,8 @@ void main() {
       blocTest<AdminProductListBloc, AdminProductListState>(
         'can be called multiple times',
         build: () {
-          when(() => mockRepository.getAll()).thenAnswer((_) async => [tProduct]);
+          when(() => mockRepository.getAll())
+              .thenAnswer((_) async => [tProduct]);
           return bloc;
         },
         act: (bloc) {
@@ -139,9 +148,11 @@ void main() {
         },
         expect: () => [
           const AdminProductListState.loading(),
-          predicate<AdminProductListState>((s) => s.maybeWhen(loaded: (_) => true, orElse: () => false)),
+          predicate<AdminProductListState>(
+              (s) => s.maybeWhen(loaded: (_) => true, orElse: () => false)),
           const AdminProductListState.loading(),
-          predicate<AdminProductListState>((s) => s.maybeWhen(loaded: (_) => true, orElse: () => false)),
+          predicate<AdminProductListState>(
+              (s) => s.maybeWhen(loaded: (_) => true, orElse: () => false)),
         ],
       );
     });

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/admin_product_repository.dart';
 import 'admin_product_list_event.dart';
 import 'admin_product_list_state.dart';
+import 'package:freshbox_app/core/errors/api_error_mapper.dart';
 
 class AdminProductListBloc
     extends Bloc<AdminProductListEvent, AdminProductListState> {
@@ -24,7 +25,7 @@ class AdminProductListBloc
       final products = await _repository.getAll();
       emit(AdminProductListState.loaded(products));
     } catch (e) {
-      emit(AdminProductListState.error(e.toString()));
+      emit(AdminProductListState.error(describeError(e)));
     }
   }
 }
